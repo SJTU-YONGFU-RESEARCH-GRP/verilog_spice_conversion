@@ -1,0 +1,3 @@
+[submodule "tools/core"]
+	path = tools/core
+	url = git@github.com:SJTU-YONGFU-RESEARCH-GRP/core.git
