@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# PLY generated files (from pyverilog - if still used elsewhere)
+parsetab.py
+parser.out
+
+# Yosys generated files
+*.ys
+netlist.json
+synthesis.ys
+
+# Output files
+output/
+*.sp
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+

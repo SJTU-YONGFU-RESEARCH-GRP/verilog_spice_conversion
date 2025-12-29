@@ -1,0 +1,29 @@
+# Python runtime
+# Use Python 3.10+ (compatible with 3.10–3.12)
+
+# Core dependencies (pinned)
+typing-extensions==4.12.2
+colorama==0.4.6
+tqdm==4.66.4
+rich==13.7.1
+numpy==1.26.4
+matplotlib==3.8.4
+seaborn==0.13.2
+
+# Additional dependencies for verilog2spice
+pyyaml>=6.0
+
+# System Requirements
+# Yosys (not a Python package, must be installed separately)
+# Installation instructions:
+# - Ubuntu/Debian: sudo apt-get install yosys
+# - macOS: brew install yosys
+# - Windows: Use WSL or install via MSYS2/MinGW
+#
+# Verilator (optional, for verification)
+# Installation instructions:
+# - Ubuntu/Debian: sudo apt-get install verilator
+# - macOS: brew install verilator
+# - Windows: Use WSL or install via MSYS2/MinGW
+# Minimum version: 5.0 or higher required (for -Wno-EOFNEWLINE support)
+

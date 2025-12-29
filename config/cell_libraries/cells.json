@@ -1,0 +1,79 @@
+{
+  "technology": "generic",
+  "spice_file": "cells.spice",
+  "cells": {
+    "INV": {
+      "spice_model": "INV",
+      "pins": ["A", "Y"],
+      "parameters": ["W", "L"],
+      "description": "Inverter"
+    },
+    "BUF": {
+      "spice_model": "BUF",
+      "pins": ["A", "Y"],
+      "parameters": ["W", "L"],
+      "description": "Buffer"
+    },
+    "NAND2": {
+      "spice_model": "NAND2",
+      "pins": ["A", "B", "Y"],
+      "parameters": ["W", "L"],
+      "description": "2-input NAND gate"
+    },
+    "NOR2": {
+      "spice_model": "NOR2",
+      "pins": ["A", "B", "Y"],
+      "parameters": ["W", "L"],
+      "description": "2-input NOR gate"
+    },
+    "AND2": {
+      "spice_model": "AND2",
+      "pins": ["A", "B", "Y"],
+      "parameters": ["W", "L"],
+      "description": "2-input AND gate"
+    },
+    "OR2": {
+      "spice_model": "OR2",
+      "pins": ["A", "B", "Y"],
+      "parameters": ["W", "L"],
+      "description": "2-input OR gate"
+    },
+    "XOR2": {
+      "spice_model": "XOR2",
+      "pins": ["A", "B", "Y"],
+      "parameters": ["W", "L"],
+      "description": "2-input XOR gate"
+    },
+    "XNOR2": {
+      "spice_model": "XNOR2",
+      "pins": ["A", "B", "Y"],
+      "parameters": ["W", "L"],
+      "description": "2-input XNOR gate"
+    },
+    "NAND3": {
+      "spice_model": "NAND3",
+      "pins": ["A", "B", "C", "Y"],
+      "parameters": ["W", "L"],
+      "description": "3-input NAND gate"
+    },
+    "NOR3": {
+      "spice_model": "NOR3",
+      "pins": ["A", "B", "C", "Y"],
+      "parameters": ["W", "L"],
+      "description": "3-input NOR gate"
+    },
+    "DFF": {
+      "spice_model": "DFF",
+      "pins": ["D", "CLK", "Q", "QN"],
+      "parameters": ["W", "L"],
+      "description": "D flip-flop"
+    },
+    "DFFR": {
+      "spice_model": "DFFR",
+      "pins": ["D", "CLK", "RST", "Q", "QN"],
+      "parameters": ["W", "L"],
+      "description": "D flip-flop with reset"
+    }
+  }
+}
+
