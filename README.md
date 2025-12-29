@@ -1,5 +1,10 @@
 # Verilog to SPICE Conversion Tool
 
+![Python](https://img.shields.io/badge/python-3.10+-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.0-green.svg)
+![Yosys](https://img.shields.io/badge/requires-yosys-orange.svg)
+[![License: CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by/4.0/)
+
 ## Overview
 
 This tool converts Verilog RTL designs to SPICE netlists using Yosys for synthesis. It supports hierarchical, flattened, and fully-flattened (with embedded cell models) output formats.
@@ -361,5 +366,14 @@ Yosys uses signal IDs (integers) internally. The tool resolves these to net name
 
 ## License
 
-See LICENSE file for details.
+This project is licensed under the [Creative Commons Attribution 4.0 International License](LICENSE) (CC BY 4.0).
+
+You are free to:
+- **Share** — copy and redistribute the material in any medium or format
+- **Adapt** — remix, transform, and build upon the material for any purpose, even commercially
+
+Under the following terms:
+- **Attribution** — You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+
+For more details, see the [LICENSE](LICENSE) file or visit [https://creativecommons.org/licenses/by/4.0/](https://creativecommons.org/licenses/by/4.0/).
 
