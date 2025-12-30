@@ -137,12 +137,16 @@ def sample_cell_library_json_file(
     import json
 
     json_file = temp_dir / "cells.json"
-    json_file.write_text(json.dumps(sample_cell_library_data, indent=2), encoding="utf-8")
+    json_file.write_text(
+        json.dumps(sample_cell_library_data, indent=2), encoding="utf-8"
+    )
     yield json_file
 
 
 @pytest.fixture
-def sample_spice_file(temp_dir: Path, sample_spice_content: str) -> Generator[Path, None, None]:
+def sample_spice_file(
+    temp_dir: Path, sample_spice_content: str
+) -> Generator[Path, None, None]:
     """Create a temporary SPICE file for testing.
 
     Args:
@@ -155,4 +159,3 @@ def sample_spice_file(temp_dir: Path, sample_spice_content: str) -> Generator[Pa
     spice_file = temp_dir / "cells.spice"
     spice_file.write_text(sample_spice_content, encoding="utf-8")
     yield spice_file
-

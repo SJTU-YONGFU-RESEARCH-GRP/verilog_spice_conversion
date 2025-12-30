@@ -181,7 +181,11 @@ M3 D3 G3 S3 B3 PMOS
             assert stats["file_size_bytes"] == 0
 
         # Test with UnicodeDecodeError
-        with patch.object(Path, "read_text", side_effect=UnicodeDecodeError("utf-8", b"", 0, 1, "invalid")):
+        with patch.object(
+            Path,
+            "read_text",
+            side_effect=UnicodeDecodeError("utf-8", b"", 0, 1, "invalid"),
+        ):
             stats = extract_spice_statistics(spice_file)
             assert stats["file_size_bytes"] == 0
 
@@ -349,6 +353,24 @@ class TestCheckNetgen:
             result = check_netgen()
             assert result is True
 
+    def test_check_netgen_found_via_netgen_in_output(self) -> None:
+        """Test checking Netgen when 'netgen' keyword is found in output.
+
+        Tests that True is returned when 'netgen' is in output (line 181).
+        """
+        from unittest.mock import Mock, patch
+
+        # First call: netgen-lvs doesn't match (no console/1.5/lvs patterns)
+        lvs_result = Mock()
+        lvs_result.stdout = "netgen some output"  # Has "netgen" keyword
+        lvs_result.stderr = ""
+        lvs_result.returncode = 0
+
+        with patch("src.verilog2spice.lvs.subprocess.run", return_value=lvs_result):
+            result = check_netgen()
+            # Should return True because "netgen" is in output and returncode == 0 (line 181)
+            assert result is True
+
 
 class TestVerifySpiceVsSpice:
     """Test cases for verify_spice_vs_spice function."""
@@ -418,8 +440,15 @@ class TestVerifySpiceVsSpice:
             with patch("src.verilog2spice.lvs.subprocess.run") as mock_run:
                 mock_run.return_value = mock_result
                 # Mock extract_spice_statistics to avoid file reading
-                with patch("src.verilog2spice.lvs.extract_spice_statistics") as mock_stats:
-                    mock_stats.return_value = {"subcircuit_instances": 0, "file_size_bytes": 100, "unique_cell_types": {}}
+                with patch(
+                    "src.verilog2spice.lvs.extract_spice_statistics"
+                ) as mock_stats:
+                    mock_stats.return_value = {
+                        "subcircuit_instances": 0,
+                        "file_size_bytes": 100,
+                        "unique_cell_types": {},
+                    }
+
                     # Mock Path.exists to return False for .lvs files, True for others
                     def mock_exists(self):
                         path_str = str(self)
@@ -427,6 +456,7 @@ class TestVerifySpiceVsSpice:
                             return False  # .lvs file doesn't exist, use stdout
                         # For spice files, use actual file system check
                         import os
+
                         return os.path.exists(path_str)
 
                     with patch.object(Path, "exists", mock_exists):
@@ -462,10 +492,17 @@ class TestVerifySpiceVsSpice:
             with patch("src.verilog2spice.lvs.subprocess.run") as mock_run:
                 mock_run.return_value = mock_result
                 # Mock extract_spice_statistics to avoid file reading
-                with patch("src.verilog2spice.lvs.extract_spice_statistics") as mock_stats:
-                    mock_stats.return_value = {"subcircuit_instances": 0, "file_size_bytes": 100, "unique_cell_types": {}}
+                with patch(
+                    "src.verilog2spice.lvs.extract_spice_statistics"
+                ) as mock_stats:
+                    mock_stats.return_value = {
+                        "subcircuit_instances": 0,
+                        "file_size_bytes": 100,
+                        "unique_cell_types": {},
+                    }
                     # Mock Path.exists to return False for .lvs files
                     import os
+
                     def mock_exists(self):
                         path_str = str(self)
                         if ".lvs" in path_str:
@@ -574,8 +611,15 @@ class TestCompareFlatteningLevels:
             mock_check.return_value = True
             with patch("src.verilog2spice.lvs.subprocess.run") as mock_run:
                 mock_run.return_value = mock_result
-                with patch("src.verilog2spice.lvs.extract_spice_statistics") as mock_stats:
-                    mock_stats.return_value = {"subcircuit_instances": 0, "file_size_bytes": 100, "unique_cell_types": {}}
+                with patch(
+                    "src.verilog2spice.lvs.extract_spice_statistics"
+                ) as mock_stats:
+                    mock_stats.return_value = {
+                        "subcircuit_instances": 0,
+                        "file_size_bytes": 100,
+                        "unique_cell_types": {},
+                    }
+
                     # Mock Path.exists to return True for .lvs file
                     def mock_exists(self):
                         path_str = str(self)
@@ -583,6 +627,7 @@ class TestCompareFlatteningLevels:
                             return True  # .lvs file exists
                         # For spice files, use actual file system check
                         import os
+
                         return os.path.exists(path_str)
 
                     with patch.object(Path, "exists", mock_exists):
@@ -615,9 +660,16 @@ class TestCompareFlatteningLevels:
             mock_check.return_value = True
             with patch("src.verilog2spice.lvs.subprocess.run") as mock_run:
                 mock_run.return_value = mock_result
-                with patch("src.verilog2spice.lvs.extract_spice_statistics") as mock_stats:
-                    mock_stats.return_value = {"subcircuit_instances": 0, "file_size_bytes": 100, "unique_cell_types": {}}
+                with patch(
+                    "src.verilog2spice.lvs.extract_spice_statistics"
+                ) as mock_stats:
+                    mock_stats.return_value = {
+                        "subcircuit_instances": 0,
+                        "file_size_bytes": 100,
+                        "unique_cell_types": {},
+                    }
                     import os
+
                     def mock_exists(self):
                         path_str = str(self)
                         if ".lvs" in path_str:
@@ -657,7 +709,10 @@ class TestCompareFlatteningLevels:
 
                 assert result.matched is False
                 assert len(result.errors) > 0
-                assert "timeout" in result.errors[0].lower() or "timed out" in result.errors[0].lower()
+                assert (
+                    "timeout" in result.errors[0].lower()
+                    or "timed out" in result.errors[0].lower()
+                )
 
     def test_verify_spice_vs_spice_with_warnings(
         self, temp_dir: Path, sample_spice_file: Path
@@ -684,9 +739,16 @@ class TestCompareFlatteningLevels:
             mock_check.return_value = True
             with patch("src.verilog2spice.lvs.subprocess.run") as mock_run:
                 mock_run.return_value = mock_result
-                with patch("src.verilog2spice.lvs.extract_spice_statistics") as mock_stats:
-                    mock_stats.return_value = {"subcircuit_instances": 0, "file_size_bytes": 100, "unique_cell_types": {}}
+                with patch(
+                    "src.verilog2spice.lvs.extract_spice_statistics"
+                ) as mock_stats:
+                    mock_stats.return_value = {
+                        "subcircuit_instances": 0,
+                        "file_size_bytes": 100,
+                        "unique_cell_types": {},
+                    }
                     import os
+
                     def mock_exists(self):
                         path_str = str(self)
                         if ".lvs" in path_str:
@@ -700,7 +762,9 @@ class TestCompareFlatteningLevels:
                         # Should have warnings but still match
                         assert len(result.warnings) > 0
 
-    def test_verify_spice_vs_spice_file2_not_found(self, temp_dir: Path, sample_spice_file: Path) -> None:
+    def test_verify_spice_vs_spice_file2_not_found(
+        self, temp_dir: Path, sample_spice_file: Path
+    ) -> None:
         """Test verifying SPICE when second file not found.
 
         Args:
@@ -742,9 +806,16 @@ class TestCompareFlatteningLevels:
             mock_check.return_value = True
             with patch("src.verilog2spice.lvs.subprocess.run") as mock_run:
                 mock_run.return_value = mock_result
-                with patch("src.verilog2spice.lvs.extract_spice_statistics") as mock_stats:
-                    mock_stats.return_value = {"subcircuit_instances": 0, "file_size_bytes": 100, "unique_cell_types": {}}
+                with patch(
+                    "src.verilog2spice.lvs.extract_spice_statistics"
+                ) as mock_stats:
+                    mock_stats.return_value = {
+                        "subcircuit_instances": 0,
+                        "file_size_bytes": 100,
+                        "unique_cell_types": {},
+                    }
                     import os
+
                     def mock_exists(self):
                         path_str = str(self)
                         if ".lvs" in path_str:
@@ -785,9 +856,16 @@ class TestCompareFlatteningLevels:
             mock_check.return_value = True
             with patch("src.verilog2spice.lvs.subprocess.run") as mock_run:
                 mock_run.return_value = mock_result
-                with patch("src.verilog2spice.lvs.extract_spice_statistics") as mock_stats:
-                    mock_stats.return_value = {"subcircuit_instances": 0, "file_size_bytes": 100, "unique_cell_types": {}}
+                with patch(
+                    "src.verilog2spice.lvs.extract_spice_statistics"
+                ) as mock_stats:
+                    mock_stats.return_value = {
+                        "subcircuit_instances": 0,
+                        "file_size_bytes": 100,
+                        "unique_cell_types": {},
+                    }
                     import os
+
                     def mock_exists(self):
                         path_str = str(self)
                         if ".lvs" in path_str:
@@ -825,9 +903,16 @@ class TestCompareFlatteningLevels:
             mock_check.return_value = True
             with patch("src.verilog2spice.lvs.subprocess.run") as mock_run:
                 mock_run.return_value = mock_result
-                with patch("src.verilog2spice.lvs.extract_spice_statistics") as mock_stats:
-                    mock_stats.return_value = {"subcircuit_instances": 0, "file_size_bytes": 100, "unique_cell_types": {}}
+                with patch(
+                    "src.verilog2spice.lvs.extract_spice_statistics"
+                ) as mock_stats:
+                    mock_stats.return_value = {
+                        "subcircuit_instances": 0,
+                        "file_size_bytes": 100,
+                        "unique_cell_types": {},
+                    }
                     import os
+
                     def mock_exists(self):
                         path_str = str(self)
                         if ".lvs" in path_str:
@@ -872,9 +957,16 @@ class TestCompareFlatteningLevels:
             mock_check.return_value = True
             with patch("src.verilog2spice.lvs.subprocess.run") as mock_run:
                 mock_run.return_value = mock_result
-                with patch("src.verilog2spice.lvs.extract_spice_statistics") as mock_stats:
-                    mock_stats.return_value = {"subcircuit_instances": 0, "file_size_bytes": 100, "unique_cell_types": {}}
+                with patch(
+                    "src.verilog2spice.lvs.extract_spice_statistics"
+                ) as mock_stats:
+                    mock_stats.return_value = {
+                        "subcircuit_instances": 0,
+                        "file_size_bytes": 100,
+                        "unique_cell_types": {},
+                    }
                     import os
+
                     def mock_exists(self):
                         path_str = str(self)
                         if ".lvs" in path_str:
@@ -915,9 +1007,16 @@ class TestCompareFlatteningLevels:
             mock_check.return_value = True
             with patch("src.verilog2spice.lvs.subprocess.run") as mock_run:
                 mock_run.return_value = mock_result
-                with patch("src.verilog2spice.lvs.extract_spice_statistics") as mock_stats:
-                    mock_stats.return_value = {"subcircuit_instances": 0, "file_size_bytes": 100, "unique_cell_types": {}}
+                with patch(
+                    "src.verilog2spice.lvs.extract_spice_statistics"
+                ) as mock_stats:
+                    mock_stats.return_value = {
+                        "subcircuit_instances": 0,
+                        "file_size_bytes": 100,
+                        "unique_cell_types": {},
+                    }
                     import os
+
                     def mock_exists(self):
                         path_str = str(self)
                         if ".lvs" in path_str:
@@ -956,13 +1055,24 @@ class TestCompareFlatteningLevels:
             mock_check.return_value = True
             with patch("src.verilog2spice.lvs.subprocess.run") as mock_run:
                 mock_run.return_value = mock_result
-                with patch("src.verilog2spice.lvs.extract_spice_statistics") as mock_stats:
+                with patch(
+                    "src.verilog2spice.lvs.extract_spice_statistics"
+                ) as mock_stats:
                     # Return stats with cell types
                     mock_stats.side_effect = [
-                        {"subcircuit_instances": 5, "file_size_bytes": 100, "unique_cell_types": {"INV": 2, "NAND2": 3}},
-                        {"subcircuit_instances": 5, "file_size_bytes": 100, "unique_cell_types": {"INV": 2, "NAND2": 3}},
+                        {
+                            "subcircuit_instances": 5,
+                            "file_size_bytes": 100,
+                            "unique_cell_types": {"INV": 2, "NAND2": 3},
+                        },
+                        {
+                            "subcircuit_instances": 5,
+                            "file_size_bytes": 100,
+                            "unique_cell_types": {"INV": 2, "NAND2": 3},
+                        },
                     ]
                     import os
+
                     def mock_exists(self):
                         path_str = str(self)
                         if ".lvs" in path_str:
@@ -1006,9 +1116,16 @@ class TestCompareFlatteningLevels:
             mock_check.return_value = True
             with patch("src.verilog2spice.lvs.subprocess.run") as mock_run:
                 mock_run.return_value = mock_result
-                with patch("src.verilog2spice.lvs.extract_spice_statistics") as mock_stats:
-                    mock_stats.return_value = {"subcircuit_instances": 0, "file_size_bytes": 100, "unique_cell_types": {}}
+                with patch(
+                    "src.verilog2spice.lvs.extract_spice_statistics"
+                ) as mock_stats:
+                    mock_stats.return_value = {
+                        "subcircuit_instances": 0,
+                        "file_size_bytes": 100,
+                        "unique_cell_types": {},
+                    }
                     import os
+
                     def mock_exists(self):
                         path_str = str(self)
                         if ".lvs" in path_str:
@@ -1023,7 +1140,10 @@ class TestCompareFlatteningLevels:
                         # Report should include errors and warnings
                         assert report_file.exists()
                         report_content = report_file.read_text(encoding="utf-8")
-                        assert "Error" in report_content or "error" in report_content.lower()
+                        assert (
+                            "Error" in report_content
+                            or "error" in report_content.lower()
+                        )
 
     def test_verify_spice_vs_spice_called_process_error(
         self, temp_dir: Path, sample_spice_file: Path
@@ -1077,9 +1197,16 @@ class TestCompareFlatteningLevels:
             mock_check.return_value = True
             with patch("src.verilog2spice.lvs.subprocess.run") as mock_run:
                 mock_run.return_value = mock_result
-                with patch("src.verilog2spice.lvs.extract_spice_statistics") as mock_stats:
-                    mock_stats.return_value = {"subcircuit_instances": 0, "file_size_bytes": 100, "unique_cell_types": {}}
+                with patch(
+                    "src.verilog2spice.lvs.extract_spice_statistics"
+                ) as mock_stats:
+                    mock_stats.return_value = {
+                        "subcircuit_instances": 0,
+                        "file_size_bytes": 100,
+                        "unique_cell_types": {},
+                    }
                     import os
+
                     def mock_exists(self):
                         path_str = str(self)
                         if ".lvs" in path_str:
@@ -1088,8 +1215,12 @@ class TestCompareFlatteningLevels:
 
                     # Mock read_text to raise error
                     with patch.object(Path, "exists", mock_exists):
-                        with patch.object(Path, "read_text", side_effect=OSError("Read error")):
-                            result = verify_spice_vs_spice(sample_spice_file, spice_file2)
+                        with patch.object(
+                            Path, "read_text", side_effect=OSError("Read error")
+                        ):
+                            result = verify_spice_vs_spice(
+                                sample_spice_file, spice_file2
+                            )
 
                             # Should handle read error gracefully
                             assert isinstance(result, LVSResult)
@@ -1141,9 +1272,16 @@ class TestCompareFlatteningLevels:
             mock_check.return_value = True
             with patch("src.verilog2spice.lvs.subprocess.run") as mock_run:
                 mock_run.return_value = mock_result
-                with patch("src.verilog2spice.lvs.extract_spice_statistics") as mock_stats:
-                    mock_stats.return_value = {"subcircuit_instances": 0, "file_size_bytes": 100, "unique_cell_types": {}}
+                with patch(
+                    "src.verilog2spice.lvs.extract_spice_statistics"
+                ) as mock_stats:
+                    mock_stats.return_value = {
+                        "subcircuit_instances": 0,
+                        "file_size_bytes": 100,
+                        "unique_cell_types": {},
+                    }
                     import os
+
                     def mock_exists(self):
                         path_str = str(self)
                         if ".lvs" in path_str:
@@ -1152,9 +1290,12 @@ class TestCompareFlatteningLevels:
 
                     # Mock unlink to raise error during cleanup
                     with patch.object(Path, "exists", mock_exists):
-                        with patch.object(Path, "unlink", side_effect=OSError("Cleanup error")):
+                        with patch.object(
+                            Path, "unlink", side_effect=OSError("Cleanup error")
+                        ):
                             # Should handle cleanup error gracefully
-                            result = verify_spice_vs_spice(sample_spice_file, spice_file2)
+                            result = verify_spice_vs_spice(
+                                sample_spice_file, spice_file2
+                            )
 
                             assert isinstance(result, LVSResult)
-

@@ -5,7 +5,7 @@
 [![Version](https://img.shields.io/badge/version-1.0.0-green.svg)](https://github.com/SJTU-YONGFU-RESEARCH-GRP/verilog_spice_conversion)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-blue.svg)](https://github.com/SJTU-YONGFU-RESEARCH-GRP/verilog_spice_conversion)
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](https://github.com/SJTU-YONGFU-RESEARCH-GRP/verilog_spice_conversion/actions)
-[![Coverage](https://img.shields.io/badge/coverage-76%25-yellow.svg)](https://github.com/SJTU-YONGFU-RESEARCH-GRP/verilog_spice_conversion)
+[![Coverage](https://img.shields.io/badge/coverage-96%-green.svg)](https://github.com/SJTU-YONGFU-RESEARCH-GRP/verilog_spice_conversion)
 [![Code Style](https://img.shields.io/badge/code%20style-Ruff-black.svg)](https://github.com/astral-sh/ruff)
 [![Type Checking](https://img.shields.io/badge/type%20checking-mypy-blue.svg)](https://github.com/python/mypy)
 [![Security](https://img.shields.io/badge/security-bandit-yellow.svg)](https://github.com/PyCQA/bandit)

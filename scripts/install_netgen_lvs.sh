@@ -68,7 +68,7 @@ if command -v netgen &> /dev/null; then
     echo "Found 'netgen' command"
     netgen -batch -version 2>&1 | head -5
     echo ""
-    
+
     # Check if it's the mesh generator
     VERSION_OUTPUT=$(netgen -batch -version 2>&1 | head -20)
     if echo "$VERSION_OUTPUT" | grep -qi "vienna\|mesh"; then
@@ -104,7 +104,7 @@ if command -v magic &> /dev/null; then
     MAGIC_PATH=$(command -v magic)
     MAGIC_DIR=$(dirname "$MAGIC_PATH")
     MAGIC_BIN_DIR="$MAGIC_DIR"
-    
+
     # Check common Magic installation locations
     for DIR in "$MAGIC_DIR" "/usr/local/lib/magic/tcl" "/usr/local/bin" "/usr/bin"; do
         if [ -f "$DIR/netgen-lvs" ] && [ $NETGEN_LVS_FOUND -eq 0 ]; then
@@ -113,7 +113,7 @@ if command -v magic &> /dev/null; then
             echo "✓ Found 'netgen-lvs' at: $NETGEN_LVS_PATH"
         fi
     done
-    
+
     # Also check if Magic includes netgen as a script
     if [ -f "$MAGIC_DIR/netgen" ] && [ $NETGEN_LVS_FOUND -eq 0 ]; then
         # Check if this netgen is the LVS version
@@ -175,4 +175,3 @@ echo "  lvs file1.sp file2.sp"
 echo "  exit"
 echo "EOF"
 echo ""
-

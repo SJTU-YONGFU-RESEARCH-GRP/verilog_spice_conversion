@@ -39,4 +39,3 @@ echo ""
 echo "3. Test with your conversion tool:"
 echo "   ./scripts/verilog2spice.sh --both --verify examples/your_file.v"
 echo ""
-

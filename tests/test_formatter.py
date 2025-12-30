@@ -60,9 +60,7 @@ class TestLoadCellLibraryContent:
 
         assert content is None
 
-    def test_load_cell_library_content_read_error(
-        self, temp_dir: Path
-    ) -> None:
+    def test_load_cell_library_content_read_error(self, temp_dir: Path) -> None:
         """Test loading cell library content when read fails.
 
         Args:
@@ -303,7 +301,10 @@ class TestFormatFlattened:
         )
 
         # Mock expand_to_transistor_level to raise an error
-        with patch("src.verilog2spice.formatter.expand_to_transistor_level", side_effect=ValueError("Expansion failed")):
+        with patch(
+            "src.verilog2spice.formatter.expand_to_transistor_level",
+            side_effect=ValueError("Expansion failed"),
+        ):
             with pytest.raises(ValueError, match="Expansion failed"):
                 format_flattened(
                     netlist,
@@ -344,7 +345,9 @@ class TestFormatFlattened:
 
         # Create a SPICE file
         spice_file = temp_dir / "cells.spice"
-        spice_file.write_text(".SUBCKT INV A Y\nM1 Y A VSS VSS NMOS\n.ENDS INV\n", encoding="utf-8")
+        spice_file.write_text(
+            ".SUBCKT INV A Y\nM1 Y A VSS VSS NMOS\n.ENDS INV\n", encoding="utf-8"
+        )
 
         with open(sample_cell_library_json_file, "r", encoding="utf-8") as f:
             import json
@@ -493,4 +496,3 @@ class TestValidateSpice:
         result = validate_spice(spice_text)
 
         assert result is False
-

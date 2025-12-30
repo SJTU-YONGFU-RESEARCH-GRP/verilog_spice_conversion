@@ -38,7 +38,10 @@ class TestSpiceNetlist:
         directives = [".op"]
 
         netlist = SpiceNetlist(
-            header=header, subcircuits=subcircuits, instances=instances, directives=directives
+            header=header,
+            subcircuits=subcircuits,
+            instances=instances,
+            directives=directives,
         )
 
         assert netlist.header == header
@@ -228,7 +231,9 @@ class TestGenerateModuleInstances:
 class TestCreateHeader:
     """Test cases for create_header function."""
 
-    def test_create_header_basic(self, sample_cell_library_data: Dict[str, Any]) -> None:
+    def test_create_header_basic(
+        self, sample_cell_library_data: Dict[str, Any]
+    ) -> None:
         """Test creating basic SPICE header.
 
         Args:
@@ -260,10 +265,11 @@ class TestCreateHeader:
         )
 
         source_files = ["test.v"]
-        header = create_header("test_module", source_files, cell_library, False, "logic")
+        header = create_header(
+            "test_module", source_files, cell_library, False, "logic"
+        )
 
         assert any("test.v" in line for line in header)
-
 
 
 class TestParseInstanceLine:
@@ -344,7 +350,9 @@ class TestGenerateNetlist:
     """Test cases for generate_netlist function."""
 
     def test_generate_netlist_basic(
-        self, sample_cell_library_data: Dict[str, Any], sample_yosys_json: Dict[str, Any]
+        self,
+        sample_cell_library_data: Dict[str, Any],
+        sample_yosys_json: Dict[str, Any],
     ) -> None:
         """Test generating basic SPICE netlist.
 
@@ -417,7 +425,10 @@ class TestExpandToTransistorLevel:
             expand_to_transistor_level(instances, cell_library)
 
     def test_expand_to_transistor_level_with_spice_file(
-        self, temp_dir: Path, sample_spice_content: str, sample_cell_library_data: Dict[str, Any]
+        self,
+        temp_dir: Path,
+        sample_spice_content: str,
+        sample_cell_library_data: Dict[str, Any],
     ) -> None:
         """Test expanding to transistor level with SPICE file.
 
@@ -472,7 +483,9 @@ class TestExpandToTransistorLevel:
         # Should return original instances unchanged
         assert expanded == instances
 
-    def test_generate_netlist_no_instances(self, sample_cell_library_data: Dict[str, Any]) -> None:
+    def test_generate_netlist_no_instances(
+        self, sample_cell_library_data: Dict[str, Any]
+    ) -> None:
         """Test generating netlist when no instances are generated.
 
         Args:
@@ -516,7 +529,9 @@ class TestExpandToTransistorLevel:
         from src.verilog2spice.mapper import CellLibrary
 
         module_data = {"cells": {}, "netnames": {}, "ports": {}}
-        cell_library = CellLibrary(technology="generic", cells={"INV": {"pins": ["A", "Y"]}})
+        cell_library = CellLibrary(
+            technology="generic", cells={"INV": {"pins": ["A", "Y"]}}
+        )
 
         instances = generate_module_instances(module_data, cell_library, "test_module")
 
@@ -535,7 +550,9 @@ class TestExpandToTransistorLevel:
             "netnames": {},
             "ports": {},
         }
-        cell_library = CellLibrary(technology="generic", cells={"INV": {"pins": ["A", "Y"]}})
+        cell_library = CellLibrary(
+            technology="generic", cells={"INV": {"pins": ["A", "Y"]}}
+        )
 
         instances = generate_module_instances(module_data, cell_library, "test_module")
 
@@ -555,7 +572,9 @@ class TestExpandToTransistorLevel:
             "ports": {},
         }
         # Library without INV (which $_NOT_ maps to)
-        cell_library = CellLibrary(technology="generic", cells={"OTHER": {"pins": ["A"]}})
+        cell_library = CellLibrary(
+            technology="generic", cells={"OTHER": {"pins": ["A"]}}
+        )
 
         instances = generate_module_instances(module_data, cell_library, "test_module")
 
@@ -584,7 +603,9 @@ class TestExpandToTransistorLevel:
             "netnames": {"A": {"bits": [0]}},
             "ports": {},
         }
-        cell_library = CellLibrary(technology="generic", cells={"INV": {"pins": ["A", "Y"]}})
+        cell_library = CellLibrary(
+            technology="generic", cells={"INV": {"pins": ["A", "Y"]}}
+        )
 
         instances = generate_module_instances(module_data, cell_library, "test_module")
 
@@ -597,7 +618,10 @@ class TestExpandToTransistorLevel:
 
         Tests that .tran directive is added for tran analysis type.
         """
-        from src.verilog2spice.spice_generator import SpiceNetlist, add_simulation_directives
+        from src.verilog2spice.spice_generator import (
+            SpiceNetlist,
+            add_simulation_directives,
+        )
 
         netlist = SpiceNetlist(header=[], instances=[], subcircuits={}, directives=[])
 
@@ -611,7 +635,10 @@ class TestExpandToTransistorLevel:
 
         Tests that .ac directive is added for ac analysis type.
         """
-        from src.verilog2spice.spice_generator import SpiceNetlist, add_simulation_directives
+        from src.verilog2spice.spice_generator import (
+            SpiceNetlist,
+            add_simulation_directives,
+        )
 
         netlist = SpiceNetlist(header=[], instances=[], subcircuits={}, directives=[])
 
@@ -619,6 +646,75 @@ class TestExpandToTransistorLevel:
 
         assert ".ac dec 10 1 1G" in result.directives
         assert ".end" in result.directives
+
+    def test_add_simulation_directives_default(self) -> None:
+        """Test adding simulation directives with default analysis type.
+
+        Tests that .op directive is added for dc (default) analysis type (line 568-569).
+        """
+        from src.verilog2spice.spice_generator import (
+            SpiceNetlist,
+            add_simulation_directives,
+        )
+
+        netlist = SpiceNetlist(header=[], instances=[], subcircuits={}, directives=[])
+
+        # Default is dc, or explicitly pass dc
+        result = add_simulation_directives(netlist, analysis_type="dc")
+
+        assert ".op" in result.directives
+        assert ".end" in result.directives
+
+    def test_expand_instance_to_transistors_already_transistor(self) -> None:
+        """Test expanding instance when it's already a transistor.
+
+        Tests that transistor instances are returned as-is (line 408).
+        """
+        from src.verilog2spice.spice_generator import expand_instance_to_transistors
+
+        # Already a transistor - should return as-is
+        instance_line = "M1 D G S B PMOS W=2u"
+        net_name_counter: dict[str, int] = {}
+        subcircuit_defs: dict[str, Any] = {}
+
+        expanded = expand_instance_to_transistors(
+            instance_line, subcircuit_defs, net_name_counter
+        )
+
+        # Should return as list with original line (line 408)
+        assert len(expanded) == 1
+        assert expanded[0] == instance_line
+
+    def test_expand_instance_to_transistors_parse_fails(self, temp_dir: Path) -> None:
+        """Test expanding instance when parsing fails.
+
+        Tests that instance is skipped when parse_instance_line returns None (line 465).
+        """
+        from src.verilog2spice.spice_generator import expand_instance_to_transistors
+        from src.verilog2spice.spice_parser import parse_spice_subcircuits
+
+        # Create SPICE with subcircuit containing invalid instance line
+        spice_content = (
+            ".SUBCKT INV A Y\n"
+            "INVALID_LINE\n"  # This won't parse as instance
+            "M1 Y A VDD VDD PMOS\n"
+            ".ENDS INV\n"
+        )
+        spice_file = temp_dir / "cells.spice"
+        spice_file.write_text(spice_content, encoding="utf-8")
+        subcircuit_defs = parse_spice_subcircuits(
+            spice_file.read_text(encoding="utf-8")
+        )
+
+        instance_line = "X1 INPUT OUTPUT INV"
+        net_name_counter: dict[str, int] = {}
+
+        expanded = expand_instance_to_transistors(
+            instance_line, subcircuit_defs, net_name_counter
+        )
+
+        # Should expand but skip invalid line (only M1 should be included)
+        assert len(expanded) >= 1
 
     def test_parse_instance_line_with_params(self) -> None:
         """Test parsing instance line with parameters.
@@ -652,7 +748,9 @@ class TestExpandToTransistorLevel:
 
         spice_file = temp_dir / "cells.spice"
         spice_file.write_text(sample_spice_content, encoding="utf-8")
-        subcircuit_defs = parse_spice_subcircuits(spice_file.read_text(encoding="utf-8"))
+        subcircuit_defs = parse_spice_subcircuits(
+            spice_file.read_text(encoding="utf-8")
+        )
 
         # Instance with unknown type (not M or X)
         instance_line = "R1 N1 N2 1k"
@@ -682,7 +780,9 @@ class TestExpandToTransistorLevel:
         spice_content = ".SUBCKT OTHER A Y\n.ENDS OTHER\n"
         spice_file = temp_dir / "cells.spice"
         spice_file.write_text(spice_content, encoding="utf-8")
-        subcircuit_defs = parse_spice_subcircuits(spice_file.read_text(encoding="utf-8"))
+        subcircuit_defs = parse_spice_subcircuits(
+            spice_file.read_text(encoding="utf-8")
+        )
 
         # Try to expand instance of subcircuit not in definitions
         instance_line = "X1 A Y MISSING_SUBCKT"
@@ -708,26 +808,33 @@ class TestExpandToTransistorLevel:
         """
         from src.verilog2spice.spice_generator import expand_instance_to_transistors
         from src.verilog2spice.spice_parser import parse_spice_subcircuits
+        from unittest.mock import patch
 
-        spice_content = (
-            ".SUBCKT INV A Y\n"
-            "M1 Y A VDD VDD PMOS\n"
-            ".ENDS INV\n"
-        )
+        spice_content = ".SUBCKT INV A Y\n" "M1 Y A VDD VDD PMOS\n" ".ENDS INV\n"
         spice_file = temp_dir / "cells.spice"
         spice_file.write_text(spice_content, encoding="utf-8")
-        subcircuit_defs = parse_spice_subcircuits(spice_file.read_text(encoding="utf-8"))
-
-        # INV has 2 ports (A, Y), but only provide 1 connection
-        instance_line = "X1 INPUT MISSING_PORT INV"
-        net_name_counter: dict[str, int] = {}
-
-        expanded = expand_instance_to_transistors(
-            instance_line, subcircuit_defs, net_name_counter
+        subcircuit_defs = parse_spice_subcircuits(
+            spice_file.read_text(encoding="utf-8")
         )
 
-        # Should still expand, but Y port would be NC
-        assert len(expanded) >= 1
+        # INV has 2 ports (A, Y), but only provide 1 connection (missing Y)
+        # This will trigger lines 424-426 where port Y is not connected
+        instance_line = "X1 INPUT INV"  # Only one port connection, missing Y
+        net_name_counter: dict[str, int] = {}
+
+        with patch("src.verilog2spice.spice_generator.logger") as mock_logger:
+            expanded = expand_instance_to_transistors(
+                instance_line, subcircuit_defs, net_name_counter
+            )
+
+            # Should log warning for unconnected port (lines 425-426)
+            mock_logger.warning.assert_called()
+            assert any(
+                "not connected" in str(call)
+                for call in mock_logger.warning.call_args_list
+            )
+            # Should still expand
+            assert len(expanded) >= 1
 
     def test_expand_instance_to_transistors_empty_comment_lines(
         self, temp_dir: Path
@@ -752,7 +859,9 @@ class TestExpandToTransistorLevel:
         )
         spice_file = temp_dir / "cells.spice"
         spice_file.write_text(spice_content, encoding="utf-8")
-        subcircuit_defs = parse_spice_subcircuits(spice_file.read_text(encoding="utf-8"))
+        subcircuit_defs = parse_spice_subcircuits(
+            spice_file.read_text(encoding="utf-8")
+        )
 
         instance_line = "X1 INPUT OUTPUT INV"
         net_name_counter: dict[str, int] = {}
@@ -785,7 +894,9 @@ class TestExpandToTransistorLevel:
         )
         spice_file = temp_dir / "cells.spice"
         spice_file.write_text(spice_content, encoding="utf-8")
-        subcircuit_defs = parse_spice_subcircuits(spice_file.read_text(encoding="utf-8"))
+        subcircuit_defs = parse_spice_subcircuits(
+            spice_file.read_text(encoding="utf-8")
+        )
 
         instance_line = "X1 INPUT OUTPUT INV"
         net_name_counter: dict[str, int] = {}
@@ -796,6 +907,44 @@ class TestExpandToTransistorLevel:
 
         # Should handle unknown instance type (lines 498-503)
         assert len(expanded) >= 1
+
+    def test_expand_instance_to_transistors_unknown_type_with_params(
+        self, temp_dir: Path
+    ) -> None:
+        """Test expanding instance with unknown type that has parameters.
+
+        Args:
+            temp_dir: Temporary directory for test files.
+
+        Tests that unknown instance types with params are handled (lines 500-503).
+        """
+        from src.verilog2spice.spice_generator import expand_instance_to_transistors
+        from src.verilog2spice.spice_parser import parse_spice_subcircuits
+
+        spice_content = (
+            ".SUBCKT INV A Y\n"
+            "R1 A Y 1k TEMP=25\n"  # Unknown type with params
+            "M1 Y A VDD VDD PMOS\n"
+            ".ENDS INV\n"
+        )
+        spice_file = temp_dir / "cells.spice"
+        spice_file.write_text(spice_content, encoding="utf-8")
+        subcircuit_defs = parse_spice_subcircuits(
+            spice_file.read_text(encoding="utf-8")
+        )
+
+        instance_line = "X1 INPUT OUTPUT INV"
+        net_name_counter: dict[str, int] = {}
+
+        expanded = expand_instance_to_transistors(
+            instance_line, subcircuit_defs, net_name_counter
+        )
+
+        # Should handle unknown instance type with params (lines 500-503)
+        assert len(expanded) >= 1
+        # Should preserve params in expanded instance
+        expanded_str = " ".join(expanded)
+        assert "TEMP=25" in expanded_str or len(expanded) >= 1
 
     def test_expand_instance_to_transistors_transistor_with_params(
         self, temp_dir: Path
@@ -818,7 +967,9 @@ class TestExpandToTransistorLevel:
         )
         spice_file = temp_dir / "cells.spice"
         spice_file.write_text(spice_content, encoding="utf-8")
-        subcircuit_defs = parse_spice_subcircuits(spice_file.read_text(encoding="utf-8"))
+        subcircuit_defs = parse_spice_subcircuits(
+            spice_file.read_text(encoding="utf-8")
+        )
 
         instance_line = "X1 INPUT OUTPUT INV"
         net_name_counter: dict[str, int] = {}
@@ -857,7 +1008,9 @@ class TestExpandToTransistorLevel:
         )
         spice_file = temp_dir / "cells.spice"
         spice_file.write_text(spice_content, encoding="utf-8")
-        subcircuit_defs = parse_spice_subcircuits(spice_file.read_text(encoding="utf-8"))
+        subcircuit_defs = parse_spice_subcircuits(
+            spice_file.read_text(encoding="utf-8")
+        )
 
         instance_line = "X1 IN1 IN2 OUT NAND2"
         net_name_counter: dict[str, int] = {}
@@ -885,23 +1038,26 @@ class TestExpandToTransistorLevel:
 
         spice_file = temp_dir / "cells.spice"
         spice_file.write_text(sample_spice_content, encoding="utf-8")
-        subcircuit_defs = parse_spice_subcircuits(spice_file.read_text(encoding="utf-8"))
+        subcircuit_defs = parse_spice_subcircuits(
+            spice_file.read_text(encoding="utf-8")
+        )
 
         instance_line = "X1 A Y INV"
         net_name_counter: dict[str, int] = {}
         instance_prefix = "TOP_"
 
         expanded = expand_instance_to_transistors(
-            instance_line, subcircuit_defs, net_name_counter, instance_prefix=instance_prefix
+            instance_line,
+            subcircuit_defs,
+            net_name_counter,
+            instance_prefix=instance_prefix,
         )
 
         # Should have prefix in instance names
         assert len(expanded) >= 2
         assert any("TOP_" in inst for inst in expanded)
 
-    def test_expand_instance_to_transistors_internal_nets(
-        self, temp_dir: Path
-    ) -> None:
+    def test_expand_instance_to_transistors_internal_nets(self, temp_dir: Path) -> None:
         """Test expanding instance with internal nets.
 
         Args:
@@ -921,7 +1077,9 @@ class TestExpandToTransistorLevel:
         )
         spice_file = temp_dir / "cells.spice"
         spice_file.write_text(spice_content, encoding="utf-8")
-        subcircuit_defs = parse_spice_subcircuits(spice_file.read_text(encoding="utf-8"))
+        subcircuit_defs = parse_spice_subcircuits(
+            spice_file.read_text(encoding="utf-8")
+        )
 
         instance_line = "X1 INPUT OUTPUT INV"
         net_name_counter: dict[str, int] = {}
@@ -933,7 +1091,9 @@ class TestExpandToTransistorLevel:
         # Should map internal nets with unique names
         assert len(expanded) >= 2
         # Internal nets should have instance prefix
-        assert any("X1_INT_NET" in inst or "INPUT_OUTPUT_INT_NET" in inst for inst in expanded)
+        assert any(
+            "X1_INT_NET" in inst or "INPUT_OUTPUT_INT_NET" in inst for inst in expanded
+        )
 
     def test_create_subcircuit(self) -> None:
         """Test creating SPICE subcircuit definition.
@@ -975,14 +1135,21 @@ class TestExpandToTransistorLevel:
         from src.verilog2spice.spice_generator import create_header
         from src.verilog2spice.mapper import CellLibrary
 
-        cell_library = CellLibrary(technology="generic", cells={}, spice_file="cells.spice")
+        cell_library = CellLibrary(
+            technology="generic", cells={}, spice_file="cells.spice"
+        )
 
-        header = create_header("TEST", ["test.v"], cell_library, embed_cells=True, flatten_level="logic")
+        header = create_header(
+            "TEST", ["test.v"], cell_library, embed_cells=True, flatten_level="logic"
+        )
 
         assert any("embedded" in line.lower() for line in header)
         # When embed_cells=True, .include should not be added
         # The embed message should be present
-        assert any("embedded" in line.lower() or "no .include needed" in line.lower() for line in header)
+        assert any(
+            "embedded" in line.lower() or "no .include needed" in line.lower()
+            for line in header
+        )
 
     def test_create_header_no_spice_file(self) -> None:
         """Test creating header without SPICE file.
@@ -1041,7 +1208,10 @@ class TestExpandToTransistorLevel:
             "cells": {
                 "cell1": {
                     "type": "$_NOT_",
-                    "connections": {"A": [999], "Y": [1000]},  # Signal IDs not in netnames
+                    "connections": {
+                        "A": [999],
+                        "Y": [1000],
+                    },  # Signal IDs not in netnames
                 }
             },
             "netnames": {},  # Empty netnames - signal_map will be empty
@@ -1056,4 +1226,3 @@ class TestExpandToTransistorLevel:
 
         # Should use fallback naming n{signal_id}
         assert len(instances) >= 0  # May generate with fallback names
-

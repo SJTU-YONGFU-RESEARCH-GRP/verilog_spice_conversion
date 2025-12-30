@@ -146,14 +146,16 @@ class TestLoadCellLibrary:
         def mock_exists(self):
             path_str = str(self)
             # Return False for the metadata path
-            if path_str == "/nonexistent/path.json" or path_str.endswith("nonexistent/path.json"):
+            if path_str == "/nonexistent/path.json" or path_str.endswith(
+                "nonexistent/path.json"
+            ):
                 return False
             # Return False for default library path
             if "cell_libraries" in path_str and "cells.json" in path_str:
                 return False
             # For other paths, use actual os.path.exists
             return os.path.exists(path_str)
-        
+
         # Patch Path.exists for the mapper module
         with patch.object(Path, "exists", mock_exists):
             with pytest.raises(FileNotFoundError):
@@ -221,13 +223,67 @@ class TestLoadCellLibrary:
             temp_dir: Temporary directory for test files.
 
         Tests that tech parameter is used as fallback (line 175).
-        Note: This test is simplified - the tech parameter fallback is tested
-        indirectly through the actual file loading since creating the exact
-        scenario requires complex path mocking.
         """
-        # Skip this test - the tech parameter fallback is covered by
-        # other tests that load default libraries
-        pytest.skip("Tech parameter fallback tested indirectly in other tests")
+        import json
+
+        # Create a mock default library structure
+        lib_data = {
+            "technology": "custom_tech",
+            "cells": {
+                "INV": {"pins": ["A", "Y"]},
+                "NAND2": {"pins": ["A", "B", "Y"]},
+            },
+            "spice_file": "cells.spice",
+        }
+
+        # Calculate the default library path (same as in mapper.py)
+        # mapper.py -> verilog2spice -> src -> project_root
+        mapper_file = (
+            Path(__file__).parent.parent / "src" / "verilog2spice" / "mapper.py"
+        )
+        project_root = mapper_file.parent.parent.parent
+        default_lib_path = project_root / "config" / "cell_libraries" / "cells.json"
+
+        # Create the directory structure if needed
+        default_lib_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Write the default library file
+        default_lib_path.write_text(json.dumps(lib_data), encoding="utf-8")
+
+        # Create the SPICE file too
+        spice_file = project_root / "config" / "cell_libraries" / "cells.spice"
+        spice_file.write_text("* SPICE models\n", encoding="utf-8")
+
+        try:
+            # Test loading default library
+            lib = load_cell_library(tech="generic")
+
+            assert lib.technology == "custom_tech"  # From file, not tech parameter
+            assert "INV" in lib.cells
+            assert "NAND2" in lib.cells
+            assert lib.spice_file is not None
+
+            # Test with tech parameter when file doesn't specify technology
+            lib_data_no_tech = {"cells": {"INV": {"pins": ["A", "Y"]}}}
+            default_lib_path.write_text(json.dumps(lib_data_no_tech), encoding="utf-8")
+
+            lib2 = load_cell_library(tech="test_tech")
+            # Should use tech parameter as fallback (line 175)
+            assert lib2.technology == "test_tech"
+        finally:
+            # Cleanup
+            if default_lib_path.exists():
+                default_lib_path.unlink()
+            if spice_file.exists():
+                spice_file.unlink()
+            # Remove empty directories if they exist
+            try:
+                if default_lib_path.parent.exists():
+                    default_lib_path.parent.rmdir()
+                if default_lib_path.parent.parent.exists():
+                    default_lib_path.parent.parent.rmdir()
+            except OSError:
+                pass  # Directory not empty or doesn't exist
 
     def test_load_cell_library_default_empty_cells(self, temp_dir: Path) -> None:
         """Test loading default library with empty cells.
@@ -236,19 +292,38 @@ class TestLoadCellLibrary:
             temp_dir: Temporary directory for test files.
 
         Tests that ValueError is raised when cells are empty (lines 182-185).
-        Note: Testing via metadata_path since default library path mocking is complex.
-        The same validation logic applies.
         """
         import json
 
-        metadata_file = temp_dir / "metadata.json"
+        # Calculate the default library path
+        mapper_file = (
+            Path(__file__).parent.parent / "src" / "verilog2spice" / "mapper.py"
+        )
+        project_root = mapper_file.parent.parent.parent
+        default_lib_path = project_root / "config" / "cell_libraries" / "cells.json"
 
+        # Create the directory structure if needed
+        default_lib_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Write empty cells library
         lib_data = {"technology": "generic", "cells": {}}
-        metadata_file.write_text(json.dumps(lib_data), encoding="utf-8")
+        default_lib_path.write_text(json.dumps(lib_data), encoding="utf-8")
 
-        # Test empty cells via metadata_path (same validation logic)
-        with pytest.raises(ValueError, match="contains no cells"):
-            load_cell_library(metadata_path=str(metadata_file))
+        try:
+            # Test that ValueError is raised for empty cells (lines 182-185)
+            with pytest.raises(ValueError, match="contains no cells"):
+                load_cell_library()
+        finally:
+            # Cleanup
+            if default_lib_path.exists():
+                default_lib_path.unlink()
+            try:
+                if default_lib_path.parent.exists():
+                    default_lib_path.parent.rmdir()
+                if default_lib_path.parent.parent.exists():
+                    default_lib_path.parent.parent.rmdir()
+            except OSError:
+                pass
 
     def test_load_cell_library_default_spice_not_found(self, temp_dir: Path) -> None:
         """Test loading default library when SPICE file not found.
@@ -257,26 +332,132 @@ class TestLoadCellLibrary:
             temp_dir: Temporary directory for test files.
 
         Tests that warning is logged when SPICE file doesn't exist (lines 187-189).
-        Note: Testing via metadata_path since default library path mocking is complex.
-        The same SPICE file validation logic applies.
         """
         import json
+        from unittest.mock import patch
 
-        metadata_file = temp_dir / "metadata.json"
+        # Calculate the default library path
+        mapper_file = (
+            Path(__file__).parent.parent / "src" / "verilog2spice" / "mapper.py"
+        )
+        project_root = mapper_file.parent.parent.parent
+        default_lib_path = project_root / "config" / "cell_libraries" / "cells.json"
 
+        # Create the directory structure if needed
+        default_lib_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Write library data with nonexistent SPICE file
         lib_data = {
             "technology": "generic",
             "cells": {"INV": {"pins": ["A", "Y"]}},
             "spice_file": "nonexistent.spice",  # This file won't exist
         }
-        metadata_file.write_text(json.dumps(lib_data), encoding="utf-8")
+        default_lib_path.write_text(json.dumps(lib_data), encoding="utf-8")
 
-        # Test via metadata_path (same validation logic as default library)
-        lib = load_cell_library(metadata_path=str(metadata_file))
+        try:
+            # Test that warning is logged and spice_file is None (lines 187-189)
+            with patch("src.verilog2spice.mapper.logger") as mock_logger:
+                lib = load_cell_library()
 
-        assert lib.spice_file is None  # SPICE file not found, so should be None
-        assert lib.technology == "generic"
-        assert "INV" in lib.cells
+                # Should log warning about missing SPICE file (line 188)
+                mock_logger.warning.assert_called()
+                assert any(
+                    "SPICE model file not found" in str(call)
+                    for call in mock_logger.warning.call_args_list
+                )
+
+                # SPICE file should be None when not found (line 189)
+                assert lib.spice_file is None
+                assert lib.technology == "generic"
+                assert "INV" in lib.cells
+        finally:
+            # Cleanup
+            if default_lib_path.exists():
+                default_lib_path.unlink()
+            try:
+                if default_lib_path.parent.exists():
+                    default_lib_path.parent.rmdir()
+                if default_lib_path.parent.parent.exists():
+                    default_lib_path.parent.parent.rmdir()
+            except OSError:
+                pass
+
+    def test_load_cell_library_default_full_path(self, temp_dir: Path) -> None:
+        """Test loading default library with full path (lines 171-193).
+
+        Args:
+            temp_dir: Temporary directory for test files.
+
+        Tests the complete default library loading path including all logging.
+        """
+        import json
+        from unittest.mock import patch
+
+        # Calculate the default library path (same as in mapper.py)
+        mapper_file = (
+            Path(__file__).parent.parent / "src" / "verilog2spice" / "mapper.py"
+        )
+        project_root = mapper_file.parent.parent.parent
+        default_lib_path = project_root / "config" / "cell_libraries" / "cells.json"
+        spice_file = project_root / "config" / "cell_libraries" / "cells.spice"
+
+        # Create the directory structure
+        default_lib_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Write library data with SPICE file
+        lib_data = {
+            "technology": "test_tech",
+            "cells": {
+                "INV": {"pins": ["A", "Y"]},
+                "NAND2": {"pins": ["A", "B", "Y"]},
+            },
+            "spice_file": "cells.spice",
+        }
+        default_lib_path.write_text(json.dumps(lib_data), encoding="utf-8")
+        spice_file.write_text("* SPICE models\n", encoding="utf-8")
+
+        try:
+            # Test loading default library with logging (lines 171-193)
+            with patch("src.verilog2spice.mapper.logger") as mock_logger:
+                lib = load_cell_library()
+
+                # Should log loading message (line 171)
+                mock_logger.info.assert_any_call(
+                    f"Loading default cell library from: {default_lib_path}"
+                )
+
+                # Should log loaded cells count (line 191)
+                assert any(
+                    "Loaded" in str(call) and "cells" in str(call)
+                    for call in mock_logger.info.call_args_list
+                )
+
+                # Should log SPICE file path (line 192)
+                assert any(
+                    "SPICE model file" in str(call)
+                    for call in mock_logger.info.call_args_list
+                )
+
+                # Verify library content
+                assert lib.technology == "test_tech"
+                assert len(lib.cells) == 2
+                assert "INV" in lib.cells
+                assert "NAND2" in lib.cells
+                assert lib.spice_file is not None
+                assert Path(lib.spice_file).exists()
+        finally:
+            # Cleanup
+            if default_lib_path.exists():
+                default_lib_path.unlink()
+            if spice_file.exists():
+                spice_file.unlink()
+            try:
+                if default_lib_path.parent.exists():
+                    default_lib_path.parent.rmdir()
+                if default_lib_path.parent.parent.exists():
+                    default_lib_path.parent.parent.rmdir()
+            except OSError:
+                pass
 
 
 class TestMapGateToCell:
@@ -363,7 +544,9 @@ class TestMapGateToCell:
         mapped = map_gate_to_cell("UNKNOWN_GATE", lib)
         assert mapped is None
 
-    def test_map_yosys_gate_not_in_library(self, sample_cell_library_data: dict) -> None:
+    def test_map_yosys_gate_not_in_library(
+        self, sample_cell_library_data: dict
+    ) -> None:
         """Test mapping Yosys gate when mapped cell is not in library.
 
         Args:
@@ -501,7 +684,9 @@ class TestGetSpiceModel:
         model = get_spice_model("INV", lib)
         assert model == "INV_MODEL"
 
-    def test_get_spice_model_uses_cell_name(self, sample_cell_library_data: dict) -> None:
+    def test_get_spice_model_uses_cell_name(
+        self, sample_cell_library_data: dict
+    ) -> None:
         """Test getting SPICE model when spice_model not in cell data.
 
         Args:
@@ -530,4 +715,3 @@ class TestGetSpiceModel:
 
         model = get_spice_model("UNKNOWN_CELL", lib)
         assert model is None
-

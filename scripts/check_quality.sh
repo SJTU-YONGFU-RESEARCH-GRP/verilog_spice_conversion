@@ -35,6 +35,123 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
+# Function to get coverage color based on percentage
+get_coverage_color() {
+    local coverage=$1
+    # Remove % sign if present and convert to integer
+    local coverage_int=$(echo "$coverage" | sed 's/%//' | cut -d'.' -f1)
+
+    if [ "$coverage_int" -ge 90 ]; then
+        echo "green"
+    elif [ "$coverage_int" -ge 75 ]; then
+        echo "yellow"
+    else
+        echo "red"
+    fi
+}
+
+# Function to update coverage badge in README.md
+update_coverage_badge() {
+    local coverage_percent=$1
+    local readme_file="README.md"
+
+    if [ ! -f "$readme_file" ]; then
+        echo -e "${YELLOW}⚠️  README.md not found. Skipping badge update.${NC}"
+        return 1
+    fi
+
+    local color=$(get_coverage_color "$coverage_percent")
+    local new_badge="[![Coverage](https://img.shields.io/badge/coverage-${coverage_percent}-${color}.svg)](https://github.com/SJTU-YONGFU-RESEARCH-GRP/verilog_spice_conversion)"
+
+    # Use Python for more reliable regex replacement if available
+    if command_exists python3 || command_exists python; then
+        local python_cmd=""
+        if command_exists python3; then
+            python_cmd="python3"
+        else
+            python_cmd="python"
+        fi
+
+        # Create a temporary Python script for the replacement
+        local temp_script=$(mktemp)
+        cat > "$temp_script" << 'PYTHON_SCRIPT'
+import re
+import sys
+
+readme_file = sys.argv[1]
+new_badge = sys.argv[2]
+
+try:
+    with open(readme_file, 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    # Pattern to match the coverage badge
+    pattern = r'\[!\[Coverage\]\(https://img\.shields\.io/badge/coverage-\d+%25-[a-z]+\.svg\)\]\(https://github\.com/SJTU-YONGFU-RESEARCH-GRP/verilog_spice_conversion\)'
+
+    # Replace the badge
+    new_content = re.sub(pattern, new_badge, content)
+
+    if new_content != content:
+        with open(readme_file, 'w', encoding='utf-8') as f:
+            f.write(new_content)
+        print("SUCCESS")
+    else:
+        print("NO_MATCH")
+        sys.exit(1)
+except Exception as e:
+    print(f"ERROR: {e}")
+    sys.exit(1)
+PYTHON_SCRIPT
+
+        local result=$($python_cmd "$temp_script" "$readme_file" "$new_badge" 2>&1)
+        rm -f "$temp_script"
+
+        if echo "$result" | grep -q "SUCCESS"; then
+            echo -e "${GREEN}✅ Updated coverage badge in README.md to ${coverage_percent}${NC}"
+            return 0
+        else
+            echo -e "${YELLOW}⚠️  Failed to update coverage badge: ${result}${NC}"
+            return 1
+        fi
+    else
+        # Fallback to sed if Python is not available
+        # Escape special characters for sed
+        local coverage_escaped=$(echo "$coverage_percent" | sed 's/%/\\%/g')
+        local new_badge_escaped=$(echo "$new_badge" | sed 's/[[\]()]/\\&/g' | sed 's/|/\\|/g')
+
+        # Simple pattern: match coverage-XX%-color
+        if sed --version 2>/dev/null | grep -q GNU; then
+            # GNU sed (Linux)
+            sed -i "s|coverage-[0-9]*%25-[a-z]*\.svg|coverage-${coverage_escaped}-${color}.svg|g" "$readme_file"
+        else
+            # BSD sed (macOS)
+            sed -i '' -E "s|coverage-[0-9]+%25-[a-z]+\.svg|coverage-${coverage_escaped}-${color}.svg|g" "$readme_file"
+        fi
+
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}✅ Updated coverage badge in README.md to ${coverage_percent}${NC}"
+            return 0
+        else
+            echo -e "${YELLOW}⚠️  Failed to update coverage badge in README.md${NC}"
+            return 1
+        fi
+    fi
+}
+
+# Function to extract coverage percentage from pytest output
+extract_coverage_percentage() {
+    local coverage_output="$1"
+    # Extract percentage from line like "TOTAL                                   1155     52    95%"
+    # or "TOTAL     1155     52    95%"
+    # Look for the percentage at the end of the TOTAL line
+    local percent=$(echo "$coverage_output" | grep -i "TOTAL" | grep -oE "[0-9]+%" | tail -n1)
+    if [ -n "$percent" ]; then
+        # Remove % and round to integer, then add % back
+        local num=$(echo "$percent" | sed 's/%//')
+        printf "%.0f%%" "$num"
+    fi
+}
+
 echo -e "\n${BLUE}1. Running pre-commit hooks...${NC}"
 if command_exists pre-commit; then
     if pre-commit run --all-files; then
@@ -141,12 +258,40 @@ else
 fi
 
 echo -e "\n${BLUE}6. Running tests with coverage...${NC}"
+COVERAGE_PERCENT=""
 if python3 -m pytest --version >/dev/null 2>&1 || python -m pytest --version >/dev/null 2>&1; then
     # Check if tests directory exists
     if [ -d "tests" ] && [ "$(ls -A tests 2>/dev/null)" ]; then
         # Use verilog2spice as the coverage source module
-        if python3 -m pytest --cov=src.verilog2spice --cov-report=term-missing -q 2>/dev/null || python -m pytest --cov=src.verilog2spice --cov-report=term-missing -q; then
+        # Capture coverage output
+        COVERAGE_OUTPUT=""
+        if [ -n "$PYTHON_BIN" ]; then
+            COVERAGE_OUTPUT=$($PYTHON_BIN -m pytest --cov=src.verilog2spice --cov-report=term-missing -q 2>&1)
+            TEST_EXIT_CODE=$?
+        else
+            if command_exists python3; then
+                COVERAGE_OUTPUT=$(python3 -m pytest --cov=src.verilog2spice --cov-report=term-missing -q 2>&1)
+                TEST_EXIT_CODE=$?
+            else
+                COVERAGE_OUTPUT=$(python -m pytest --cov=src.verilog2spice --cov-report=term-missing -q 2>&1)
+                TEST_EXIT_CODE=$?
+            fi
+        fi
+
+        if [ $TEST_EXIT_CODE -eq 0 ]; then
             print_status 0 "Tests passed with coverage"
+            # Extract coverage percentage
+            COVERAGE_PERCENT=$(extract_coverage_percentage "$COVERAGE_OUTPUT")
+            if [ -n "$COVERAGE_PERCENT" ]; then
+                echo -e "${BLUE}   Overall Coverage: ${COVERAGE_PERCENT}${NC}"
+                # Display the original pytest coverage breakdown
+                echo -e "${BLUE}   Coverage Breakdown:${NC}"
+                echo "$COVERAGE_OUTPUT" | grep -E "^(Name|src/|TOTAL|---)" | head -20
+                # Update badge in README.md
+                update_coverage_badge "$COVERAGE_PERCENT"
+            else
+                echo -e "${YELLOW}⚠️  Could not extract coverage percentage from output${NC}"
+            fi
         else
             print_status 1 "Tests failed"
             echo -e "${YELLOW}💡 Run tests with: python3 -m pytest -v (or python -m pytest -v)${NC}"
@@ -218,6 +363,10 @@ fi
 echo ""
 if [ $FAILED_CHECKS -eq 0 ]; then
     echo -e "${GREEN}🎉 All quality checks passed! Your code is ready for commit.${NC}"
+    if [ -n "$COVERAGE_PERCENT" ]; then
+        echo -e "${BLUE}📊 Test coverage: ${COVERAGE_PERCENT}${NC}"
+        echo -e "${BLUE}📝 Coverage badge has been updated in README.md${NC}"
+    fi
     echo -e "${BLUE}💡 Tip: Run 'git add .' and 'git commit' when ready.${NC}"
     echo -e "${BLUE}💡 Code complies with CONSTRAINTS_PY.md requirements${NC}"
 else

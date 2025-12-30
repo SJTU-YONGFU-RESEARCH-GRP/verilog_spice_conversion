@@ -8,7 +8,11 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from src.verilog2spice.synthesizer import Netlist, check_yosys, create_default_synthesis_script
+from src.verilog2spice.synthesizer import (
+    Netlist,
+    check_yosys,
+    create_default_synthesis_script,
+)
 
 if TYPE_CHECKING:
     pass
@@ -145,7 +149,9 @@ class TestCreateDefaultSynthesisScript:
         assert "proc" not in script_content.lower()
         assert "opt" not in script_content.lower()
 
-    def test_create_default_synthesis_script_with_includes(self, temp_dir: Path) -> None:
+    def test_create_default_synthesis_script_with_includes(
+        self, temp_dir: Path
+    ) -> None:
         """Test creating synthesis script with include paths.
 
         Args:
@@ -419,7 +425,9 @@ class TestSynthesize:
         from src.verilog2spice.synthesizer import synthesize
 
         script_file = temp_dir / "custom.ys"
-        script_file.write_text("read_verilog test.v\nwrite_json netlist.json\n", encoding="utf-8")
+        script_file.write_text(
+            "read_verilog test.v\nwrite_json netlist.json\n", encoding="utf-8"
+        )
         netlist_file = temp_dir / "netlist.json"
 
         import json
@@ -456,7 +464,9 @@ class TestSynthesize:
         from src.verilog2spice.synthesizer import synthesize
 
         script_file = temp_dir / "custom.ys"
-        script_file.write_text("read_verilog test.v\nwrite_json netlist.json\n", encoding="utf-8")
+        script_file.write_text(
+            "read_verilog test.v\nwrite_json netlist.json\n", encoding="utf-8"
+        )
         netlist_file = Path(tempfile.gettempdir()) / "netlist.json"
 
         netlist_file.write_text(json.dumps(sample_yosys_json), encoding="utf-8")
@@ -550,11 +560,22 @@ class TestSynthesize:
 
         with patch("src.verilog2spice.synthesizer.check_yosys", return_value=True):
             with patch("src.verilog2spice.synthesizer.run_yosys"):
-                with patch("src.verilog2spice.synthesizer.create_default_synthesis_script") as mock_create:
-                    mock_create.return_value = ("script.ys", temp_dir / "nonexistent.json")
+                with patch(
+                    "src.verilog2spice.synthesizer.create_default_synthesis_script"
+                ) as mock_create:
+                    mock_create.return_value = (
+                        "script.ys",
+                        temp_dir / "nonexistent.json",
+                    )
 
-                    with pytest.raises(RuntimeError, match="JSON output file not found"):
-                        synthesize(verilog_files=["test.v"], top_module="test", output_dir=str(temp_dir))
+                    with pytest.raises(
+                        RuntimeError, match="JSON output file not found"
+                    ):
+                        synthesize(
+                            verilog_files=["test.v"],
+                            top_module="test",
+                            output_dir=str(temp_dir),
+                        )
 
     def test_synthesize_json_decode_error(self, temp_dir: Path) -> None:
         """Test synthesize when JSON decode fails.
@@ -571,11 +592,17 @@ class TestSynthesize:
 
         with patch("src.verilog2spice.synthesizer.check_yosys", return_value=True):
             with patch("src.verilog2spice.synthesizer.run_yosys"):
-                with patch("src.verilog2spice.synthesizer.create_default_synthesis_script") as mock_create:
+                with patch(
+                    "src.verilog2spice.synthesizer.create_default_synthesis_script"
+                ) as mock_create:
                     mock_create.return_value = ("script.ys", netlist_file)
 
                     with pytest.raises(RuntimeError, match="Synthesis failed"):
-                        synthesize(verilog_files=["test.v"], top_module="test", output_dir=str(temp_dir))
+                        synthesize(
+                            verilog_files=["test.v"],
+                            top_module="test",
+                            output_dir=str(temp_dir),
+                        )
 
     def test_synthesize_with_include_paths_and_defines(
         self, temp_dir: Path, sample_yosys_json: dict
@@ -610,7 +637,9 @@ class TestSynthesize:
 
                 assert netlist is not None
 
-    def test_synthesize_with_optimize(self, temp_dir: Path, sample_yosys_json: dict) -> None:
+    def test_synthesize_with_optimize(
+        self, temp_dir: Path, sample_yosys_json: dict
+    ) -> None:
         """Test synthesize with optimization enabled.
 
         Args:
@@ -656,7 +685,11 @@ class TestSynthesize:
                 mock_run.side_effect = subprocess.TimeoutExpired("yosys", timeout=300)
 
                 with pytest.raises(RuntimeError, match="Synthesis failed"):
-                    synthesize(verilog_files=["test.v"], top_module="test", output_dir=str(temp_dir))
+                    synthesize(
+                        verilog_files=["test.v"],
+                        top_module="test",
+                        output_dir=str(temp_dir),
+                    )
 
     def test_synthesize_os_error(self, temp_dir: Path) -> None:
         """Test synthesize when OSError occurs.
@@ -673,5 +706,8 @@ class TestSynthesize:
                 mock_run.side_effect = OSError("Permission denied")
 
                 with pytest.raises(RuntimeError, match="Synthesis failed"):
-                    synthesize(verilog_files=["test.v"], top_module="test", output_dir=str(temp_dir))
-
+                    synthesize(
+                        verilog_files=["test.v"],
+                        top_module="test",
+                        output_dir=str(temp_dir),
+                    )

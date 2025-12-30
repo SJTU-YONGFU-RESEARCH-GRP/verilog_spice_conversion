@@ -11,7 +11,13 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from src.verilog2spice.cli import load_config, main, parse_args, process_defines, setup_logging
+from src.verilog2spice.cli import (
+    load_config,
+    main,
+    parse_args,
+    process_defines,
+    setup_logging,
+)
 
 if TYPE_CHECKING:
     pass
@@ -28,7 +34,7 @@ class TestSetupLogging:
         # Reset logging to ensure clean state
         logging.root.handlers = []
         logging.root.setLevel(logging.WARNING)
-        
+
         setup_logging(verbose=True, quiet=False, log_file=None)
 
         assert logging.root.level <= logging.DEBUG
@@ -41,7 +47,7 @@ class TestSetupLogging:
         # Reset logging to ensure clean state
         logging.root.handlers = []
         logging.root.setLevel(logging.WARNING)
-        
+
         setup_logging(verbose=False, quiet=True, log_file=None)
 
         assert logging.root.level >= logging.ERROR
@@ -54,7 +60,7 @@ class TestSetupLogging:
         # Reset logging to ensure clean state
         logging.root.handlers = []
         logging.root.setLevel(logging.WARNING)
-        
+
         setup_logging(verbose=False, quiet=False, log_file=None)
 
         assert logging.root.level == logging.INFO
@@ -70,12 +76,12 @@ class TestSetupLogging:
         # Reset logging to ensure clean state
         logging.root.handlers = []
         logging.root.setLevel(logging.WARNING)
-        
+
         log_file = temp_dir / "test.log"
         setup_logging(verbose=False, quiet=False, log_file=str(log_file))
 
         # Check that file handler was added
-        file_handlers = [h for h in logging.root.handlers if hasattr(h, 'baseFilename')]
+        file_handlers = [h for h in logging.root.handlers if hasattr(h, "baseFilename")]
         assert len(file_handlers) > 0
 
 
@@ -353,7 +359,9 @@ class TestMain:
         mock_parse_args.return_value = mock_args
 
         # Setup cell library
-        cell_lib = CellLibrary(technology="generic", cells=sample_cell_library_data["cells"])
+        cell_lib = CellLibrary(
+            technology="generic", cells=sample_cell_library_data["cells"]
+        )
         mock_load_cell_library.return_value = cell_lib
 
         # Setup netlist
@@ -371,9 +379,13 @@ class TestMain:
 
         with patch("src.verilog2spice.cli.parse_yosys_json") as mock_parse_yosys, patch(
             "src.verilog2spice.cli.get_top_module"
-        ) as mock_get_top, patch("src.verilog2spice.cli.generate_netlist") as mock_generate, patch(
+        ) as mock_get_top, patch(
+            "src.verilog2spice.cli.generate_netlist"
+        ) as mock_generate, patch(
             "src.verilog2spice.cli.format_hierarchical"
-        ) as mock_format_hier, patch("src.verilog2spice.cli.validate_spice") as mock_validate:
+        ) as mock_format_hier, patch(
+            "src.verilog2spice.cli.validate_spice"
+        ) as mock_validate:
             mock_module_info = ModuleInfo(name="test_module", ports=[], cells=[])
             mock_parse_yosys.return_value = {"test_module": mock_module_info}
             mock_get_top.return_value = mock_module_info
@@ -478,11 +490,13 @@ class TestMain:
 
         with patch("src.verilog2spice.cli.parse_yosys_json") as mock_parse_yosys, patch(
             "src.verilog2spice.cli.get_top_module"
-        ) as mock_get_top, patch("src.verilog2spice.cli.generate_netlist") as mock_generate, patch(
+        ) as mock_get_top, patch(
+            "src.verilog2spice.cli.generate_netlist"
+        ) as mock_generate, patch(
             "src.verilog2spice.cli.load_cell_library_content"
-        ) as mock_load_content, patch("src.verilog2spice.cli.format_flattened") as mock_format_flat, patch(
-            "src.verilog2spice.cli.validate_spice"
-        ):
+        ) as mock_load_content, patch(
+            "src.verilog2spice.cli.format_flattened"
+        ) as mock_format_flat, patch("src.verilog2spice.cli.validate_spice"):
             mock_module_info = ModuleInfo(name="test_module", ports=[], cells=[])
             mock_parse_yosys.return_value = {"test_module": mock_module_info}
             mock_get_top.return_value = mock_module_info
@@ -586,11 +600,17 @@ class TestMain:
 
         with patch("src.verilog2spice.cli.parse_yosys_json") as mock_parse_yosys, patch(
             "src.verilog2spice.cli.get_top_module"
-        ) as mock_get_top, patch("src.verilog2spice.cli.generate_netlist") as mock_generate, patch(
+        ) as mock_get_top, patch(
+            "src.verilog2spice.cli.generate_netlist"
+        ) as mock_generate, patch(
             "src.verilog2spice.cli.load_cell_library_content"
-        ) as mock_load_content, patch("src.verilog2spice.cli.format_hierarchical") as mock_format_hier, patch(
+        ) as mock_load_content, patch(
+            "src.verilog2spice.cli.format_hierarchical"
+        ) as mock_format_hier, patch(
             "src.verilog2spice.cli.format_flattened"
-        ) as mock_format_flat, patch("src.verilog2spice.cli.validate_spice") as mock_validate:
+        ) as mock_format_flat, patch(
+            "src.verilog2spice.cli.validate_spice"
+        ) as mock_validate:
             mock_module_info = ModuleInfo(name="test_module", ports=[], cells=[])
             mock_parse_yosys.return_value = {"test_module": mock_module_info}
             mock_get_top.return_value = mock_module_info
@@ -675,7 +695,9 @@ class TestMain:
         mock_parse_args.return_value = mock_args
 
         # Setup cell library
-        cell_lib = CellLibrary(technology="generic", cells=sample_cell_library_data["cells"])
+        cell_lib = CellLibrary(
+            technology="generic", cells=sample_cell_library_data["cells"]
+        )
         mock_load_cell_library.return_value = cell_lib
 
         # Setup netlist
@@ -693,11 +715,13 @@ class TestMain:
 
         with patch("src.verilog2spice.cli.load_config") as mock_load_config, patch(
             "src.verilog2spice.cli.parse_yosys_json"
-        ) as mock_parse_yosys, patch("src.verilog2spice.cli.get_top_module") as mock_get_top, patch(
+        ) as mock_parse_yosys, patch(
+            "src.verilog2spice.cli.get_top_module"
+        ) as mock_get_top, patch(
             "src.verilog2spice.cli.generate_netlist"
-        ) as mock_generate, patch("src.verilog2spice.cli.format_hierarchical") as mock_format_hier, patch(
-            "src.verilog2spice.cli.validate_spice"
-        ):
+        ) as mock_generate, patch(
+            "src.verilog2spice.cli.format_hierarchical"
+        ) as mock_format_hier, patch("src.verilog2spice.cli.validate_spice"):
             mock_module_info = ModuleInfo(name="test_module", ports=[], cells=[])
             mock_parse_yosys.return_value = {"test_module": mock_module_info}
             mock_get_top.return_value = mock_module_info
@@ -808,7 +832,9 @@ class TestMain:
 
         with patch("src.verilog2spice.cli.setup_logging"), patch(
             "src.verilog2spice.cli.logging"
-        ) as mock_logging, patch("src.verilog2spice.cli.Progress") as mock_progress, patch(
+        ) as mock_logging, patch(
+            "src.verilog2spice.cli.Progress"
+        ) as mock_progress, patch(
             "src.verilog2spice.cli.load_cell_library"
         ) as mock_load_cell_library:
             # Make load_cell_library raise an exception (inside try block)
@@ -910,11 +936,13 @@ class TestMain:
 
         with patch("src.verilog2spice.cli.parse_yosys_json") as mock_parse_yosys, patch(
             "src.verilog2spice.cli.get_top_module"
-        ) as mock_get_top, patch("src.verilog2spice.cli.generate_netlist") as mock_generate, patch(
+        ) as mock_get_top, patch(
+            "src.verilog2spice.cli.generate_netlist"
+        ) as mock_generate, patch(
             "src.verilog2spice.cli.load_cell_library_content"
-        ) as mock_load_content, patch("src.verilog2spice.cli.format_flattened") as mock_format_flat, patch(
-            "src.verilog2spice.cli.validate_spice"
-        ):
+        ) as mock_load_content, patch(
+            "src.verilog2spice.cli.format_flattened"
+        ) as mock_format_flat, patch("src.verilog2spice.cli.validate_spice"):
             mock_module_info = ModuleInfo(name="test_module", ports=[], cells=[])
             mock_parse_yosys.return_value = {"test_module": mock_module_info}
             mock_get_top.return_value = mock_module_info
@@ -1026,9 +1054,13 @@ class TestMain:
 
         with patch("src.verilog2spice.cli.parse_yosys_json") as mock_parse_yosys, patch(
             "src.verilog2spice.cli.get_top_module"
-        ) as mock_get_top, patch("src.verilog2spice.cli.generate_netlist") as mock_generate, patch(
+        ) as mock_get_top, patch(
+            "src.verilog2spice.cli.generate_netlist"
+        ) as mock_generate, patch(
             "src.verilog2spice.cli.load_cell_library_content"
-        ) as mock_load_content, patch("src.verilog2spice.cli.format_hierarchical") as mock_format_hier, patch(
+        ) as mock_load_content, patch(
+            "src.verilog2spice.cli.format_hierarchical"
+        ) as mock_format_hier, patch(
             "src.verilog2spice.cli.format_flattened"
         ) as mock_format_flat, patch("src.verilog2spice.cli.validate_spice"), patch(
             "src.verilog2spice.cli.verify_spice_vs_spice"
@@ -1053,7 +1085,9 @@ class TestMain:
             hier_file.write_text("* Hierarchical\n", encoding="utf-8")
             flat_file.write_text("* Flattened\n", encoding="utf-8")
 
-            mock_verify.return_value = LVSResult(matched=True, output="", errors=[], warnings=[])
+            mock_verify.return_value = LVSResult(
+                matched=True, output="", errors=[], warnings=[]
+            )
 
             result = main()
 
@@ -1152,9 +1186,9 @@ class TestMain:
 
         with patch("src.verilog2spice.cli.parse_yosys_json") as mock_parse_yosys, patch(
             "src.verilog2spice.cli.get_top_module"
-        ) as mock_get_top, patch("src.verilog2spice.cli.generate_netlist") as mock_generate, patch(
-            "src.verilog2spice.cli.logging"
-        ) as mock_logging:
+        ) as mock_get_top, patch(
+            "src.verilog2spice.cli.generate_netlist"
+        ) as mock_generate, patch("src.verilog2spice.cli.logging") as mock_logging:
             mock_module_info = ModuleInfo(name="test_module", ports=[], cells=[])
             mock_parse_yosys.return_value = {"test_module": mock_module_info}
             mock_get_top.return_value = mock_module_info
@@ -1168,7 +1202,7 @@ class TestMain:
 
             # RuntimeError is raised but caught by main's exception handler
             result = main()
-            
+
             assert result == 1
             mock_logger.exception.assert_called()
 
@@ -1198,13 +1232,21 @@ class TestMain:
 
         with patch("src.verilog2spice.cli.parse_args") as mock_parse_args, patch(
             "src.verilog2spice.cli.setup_logging"
-        ), patch("src.verilog2spice.cli.load_cell_library") as mock_load_cell_library, patch(
+        ), patch(
+            "src.verilog2spice.cli.load_cell_library"
+        ) as mock_load_cell_library, patch(
             "src.verilog2spice.cli.synthesize"
-        ) as mock_synthesize, patch("src.verilog2spice.cli.parse_yosys_json") as mock_parse_yosys, patch(
+        ) as mock_synthesize, patch(
+            "src.verilog2spice.cli.parse_yosys_json"
+        ) as mock_parse_yosys, patch(
             "src.verilog2spice.cli.get_top_module"
-        ) as mock_get_top, patch("src.verilog2spice.cli.generate_netlist") as mock_generate, patch(
+        ) as mock_get_top, patch(
+            "src.verilog2spice.cli.generate_netlist"
+        ) as mock_generate, patch(
             "src.verilog2spice.cli.load_cell_library_content"
-        ) as mock_load_content, patch("src.verilog2spice.cli.format_hierarchical") as mock_format_hier, patch(
+        ) as mock_load_content, patch(
+            "src.verilog2spice.cli.format_hierarchical"
+        ) as mock_format_hier, patch(
             "src.verilog2spice.cli.format_flattened"
         ) as mock_format_flat, patch("src.verilog2spice.cli.validate_spice"):
             # Setup mocks
@@ -1236,7 +1278,9 @@ class TestMain:
             # Setup cell library with spice_file
             spice_file = temp_dir / "cells.spice"
             spice_file.write_text(".SUBCKT INV A Y\n.ENDS INV\n", encoding="utf-8")
-            cell_lib = CellLibrary(technology="generic", cells={}, spice_file=str(spice_file))
+            cell_lib = CellLibrary(
+                technology="generic", cells={}, spice_file=str(spice_file)
+            )
             mock_load_cell_library.return_value = cell_lib
 
             # Setup netlist
@@ -1328,7 +1372,9 @@ class TestMain:
         mock_parse_args.return_value = mock_args
 
         # Setup cell library
-        cell_lib = CellLibrary(technology="generic", cells=sample_cell_library_data["cells"])
+        cell_lib = CellLibrary(
+            technology="generic", cells=sample_cell_library_data["cells"]
+        )
         mock_load_cell_library.return_value = cell_lib
 
         # Setup netlist
@@ -1346,7 +1392,9 @@ class TestMain:
 
         with patch("src.verilog2spice.cli.parse_yosys_json") as mock_parse_yosys, patch(
             "src.verilog2spice.cli.get_top_module"
-        ) as mock_get_top, patch("src.verilog2spice.cli.generate_netlist") as mock_generate, patch(
+        ) as mock_get_top, patch(
+            "src.verilog2spice.cli.generate_netlist"
+        ) as mock_generate, patch(
             "src.verilog2spice.cli.format_hierarchical"
         ) as mock_format_hier, patch("src.verilog2spice.cli.validate_spice"), patch(
             "src.verilog2spice.cli.logging"
@@ -1431,7 +1479,9 @@ class TestMain:
         mock_args.include_paths = []
         mock_args.verify = False
         mock_args.verify_flatten_levels = False
-        mock_args.verify_reference = str(temp_dir / "nonexistent.sp")  # File doesn't exist
+        mock_args.verify_reference = str(
+            temp_dir / "nonexistent.sp"
+        )  # File doesn't exist
         mock_args.verbose = False
         mock_args.quiet = False
         mock_args.log = None
@@ -1464,11 +1514,13 @@ class TestMain:
 
         with patch("src.verilog2spice.cli.parse_yosys_json") as mock_parse_yosys, patch(
             "src.verilog2spice.cli.get_top_module"
-        ) as mock_get_top, patch("src.verilog2spice.cli.generate_netlist") as mock_generate, patch(
+        ) as mock_get_top, patch(
+            "src.verilog2spice.cli.generate_netlist"
+        ) as mock_generate, patch(
             "src.verilog2spice.cli.load_cell_library_content"
-        ) as mock_load_content, patch("src.verilog2spice.cli.format_flattened") as mock_format_flat, patch(
-            "src.verilog2spice.cli.validate_spice"
-        ):
+        ) as mock_load_content, patch(
+            "src.verilog2spice.cli.format_flattened"
+        ) as mock_format_flat, patch("src.verilog2spice.cli.validate_spice"):
             mock_module_info = ModuleInfo(name="test_module", ports=[], cells=[])
             mock_parse_yosys.return_value = {"test_module": mock_module_info}
             mock_get_top.return_value = mock_module_info
@@ -1581,11 +1633,15 @@ class TestMain:
 
         with patch("src.verilog2spice.cli.parse_yosys_json") as mock_parse_yosys, patch(
             "src.verilog2spice.cli.get_top_module"
-        ) as mock_get_top, patch("src.verilog2spice.cli.generate_netlist") as mock_generate, patch(
+        ) as mock_get_top, patch(
+            "src.verilog2spice.cli.generate_netlist"
+        ) as mock_generate, patch(
             "src.verilog2spice.cli.load_cell_library_content"
-        ) as mock_load_content, patch("src.verilog2spice.cli.format_flattened") as mock_format_flat, patch(
-            "src.verilog2spice.cli.validate_spice"
-        ), patch("src.verilog2spice.cli.verify_spice_vs_spice") as mock_verify:
+        ) as mock_load_content, patch(
+            "src.verilog2spice.cli.format_flattened"
+        ) as mock_format_flat, patch("src.verilog2spice.cli.validate_spice"), patch(
+            "src.verilog2spice.cli.verify_spice_vs_spice"
+        ) as mock_verify:
             mock_module_info = ModuleInfo(name="test_module", ports=[], cells=[])
             mock_parse_yosys.return_value = {"test_module": mock_module_info}
             mock_get_top.return_value = mock_module_info
@@ -1603,7 +1659,7 @@ class TestMain:
             # The flat_file not found case (line 497) would require preventing file
             # creation, which is complex. The reference_file not found case is
             # tested in test_main_verify_reference_not_found.
-            
+
             result = main()
 
             assert result == 0
@@ -1706,13 +1762,15 @@ class TestMain:
 
         with patch("src.verilog2spice.cli.parse_yosys_json") as mock_parse_yosys, patch(
             "src.verilog2spice.cli.get_top_module"
-        ) as mock_get_top, patch("src.verilog2spice.cli.generate_netlist") as mock_generate, patch(
+        ) as mock_get_top, patch(
+            "src.verilog2spice.cli.generate_netlist"
+        ) as mock_generate, patch(
             "src.verilog2spice.cli.load_cell_library_content"
-        ) as mock_load_content, patch("src.verilog2spice.cli.format_flattened") as mock_format_flat, patch(
-            "src.verilog2spice.cli.validate_spice"
-        ), patch("src.verilog2spice.cli.verify_spice_vs_spice") as mock_verify, patch(
-            "src.verilog2spice.cli.logging"
-        ) as mock_logging:
+        ) as mock_load_content, patch(
+            "src.verilog2spice.cli.format_flattened"
+        ) as mock_format_flat, patch("src.verilog2spice.cli.validate_spice"), patch(
+            "src.verilog2spice.cli.verify_spice_vs_spice"
+        ) as mock_verify, patch("src.verilog2spice.cli.logging") as mock_logging:
             mock_module_info = ModuleInfo(name="test_module", ports=[], cells=[])
             mock_parse_yosys.return_value = {"test_module": mock_module_info}
             mock_get_top.return_value = mock_module_info
@@ -1736,7 +1794,14 @@ class TestMain:
             mock_verify.return_value = LVSResult(
                 matched=False,
                 output="Some netgen output",
-                errors=["Error 1", "Error 2", "Error 3", "Error 4", "Error 5", "Error 6"],
+                errors=[
+                    "Error 1",
+                    "Error 2",
+                    "Error 3",
+                    "Error 4",
+                    "Error 5",
+                    "Error 6",
+                ],
                 warnings=[],
             )
 
@@ -1843,13 +1908,15 @@ class TestMain:
 
         with patch("src.verilog2spice.cli.parse_yosys_json") as mock_parse_yosys, patch(
             "src.verilog2spice.cli.get_top_module"
-        ) as mock_get_top, patch("src.verilog2spice.cli.generate_netlist") as mock_generate, patch(
+        ) as mock_get_top, patch(
+            "src.verilog2spice.cli.generate_netlist"
+        ) as mock_generate, patch(
             "src.verilog2spice.cli.load_cell_library_content"
-        ) as mock_load_content, patch("src.verilog2spice.cli.format_flattened") as mock_format_flat, patch(
-            "src.verilog2spice.cli.validate_spice"
-        ), patch("src.verilog2spice.cli.compare_flattening_levels") as mock_compare, patch(
-            "src.verilog2spice.cli.logging"
-        ) as mock_logging:
+        ) as mock_load_content, patch(
+            "src.verilog2spice.cli.format_flattened"
+        ) as mock_format_flat, patch("src.verilog2spice.cli.validate_spice"), patch(
+            "src.verilog2spice.cli.compare_flattening_levels"
+        ) as mock_compare, patch("src.verilog2spice.cli.logging") as mock_logging:
             mock_module_info = ModuleInfo(name="test_module", ports=[], cells=[])
             mock_parse_yosys.return_value = {"test_module": mock_module_info}
             mock_get_top.return_value = mock_module_info
@@ -1872,7 +1939,10 @@ class TestMain:
             transistor_file.write_text("* Transistor level\n", encoding="utf-8")
 
             # Compare result
-            mock_compare.return_value = (True, LVSResult(matched=True, output="", errors=[], warnings=[]))
+            mock_compare.return_value = (
+                True,
+                LVSResult(matched=True, output="", errors=[], warnings=[]),
+            )
 
             result = main()
 
@@ -1972,11 +2042,13 @@ class TestMain:
 
         with patch("src.verilog2spice.cli.parse_yosys_json") as mock_parse_yosys, patch(
             "src.verilog2spice.cli.get_top_module"
-        ) as mock_get_top, patch("src.verilog2spice.cli.generate_netlist") as mock_generate, patch(
+        ) as mock_get_top, patch(
+            "src.verilog2spice.cli.generate_netlist"
+        ) as mock_generate, patch(
             "src.verilog2spice.cli.load_cell_library_content"
-        ) as mock_load_content, patch("src.verilog2spice.cli.format_flattened") as mock_format_flat, patch(
-            "src.verilog2spice.cli.validate_spice"
-        ):
+        ) as mock_load_content, patch(
+            "src.verilog2spice.cli.format_flattened"
+        ) as mock_format_flat, patch("src.verilog2spice.cli.validate_spice"):
             mock_module_info = ModuleInfo(name="test_module", ports=[], cells=[])
             mock_parse_yosys.return_value = {"test_module": mock_module_info}
             mock_get_top.return_value = mock_module_info
@@ -2090,9 +2162,13 @@ class TestMain:
 
         with patch("src.verilog2spice.cli.parse_yosys_json") as mock_parse_yosys, patch(
             "src.verilog2spice.cli.get_top_module"
-        ) as mock_get_top, patch("src.verilog2spice.cli.generate_netlist") as mock_generate, patch(
+        ) as mock_get_top, patch(
+            "src.verilog2spice.cli.generate_netlist"
+        ) as mock_generate, patch(
             "src.verilog2spice.cli.load_cell_library_content"
-        ) as mock_load_content, patch("src.verilog2spice.cli.format_hierarchical") as mock_format_hier, patch(
+        ) as mock_load_content, patch(
+            "src.verilog2spice.cli.format_hierarchical"
+        ) as mock_format_hier, patch(
             "src.verilog2spice.cli.format_flattened"
         ) as mock_format_flat, patch("src.verilog2spice.cli.validate_spice"), patch(
             "src.verilog2spice.cli.verify_spice_vs_spice"
@@ -2203,7 +2279,9 @@ class TestMain:
         mock_parse_args.return_value = mock_args
 
         # Setup cell library
-        cell_lib = CellLibrary(technology="generic", cells=sample_cell_library_data["cells"])
+        cell_lib = CellLibrary(
+            technology="generic", cells=sample_cell_library_data["cells"]
+        )
         mock_load_cell_library.return_value = cell_lib
 
         # Setup netlist
@@ -2223,7 +2301,9 @@ class TestMain:
 
         with patch("src.verilog2spice.cli.parse_yosys_json") as mock_parse_yosys, patch(
             "src.verilog2spice.cli.get_top_module"
-        ) as mock_get_top, patch("src.verilog2spice.cli.generate_netlist") as mock_generate, patch(
+        ) as mock_get_top, patch(
+            "src.verilog2spice.cli.generate_netlist"
+        ) as mock_generate, patch(
             "src.verilog2spice.cli.format_hierarchical"
         ) as mock_format_hier, patch("src.verilog2spice.cli.validate_spice"):
             mock_module_info = ModuleInfo(name="test_module", ports=[], cells=[])
@@ -2308,7 +2388,9 @@ class TestMain:
         mock_parse_args.return_value = mock_args
 
         # Setup cell library
-        cell_lib = CellLibrary(technology="generic", cells=sample_cell_library_data["cells"])
+        cell_lib = CellLibrary(
+            technology="generic", cells=sample_cell_library_data["cells"]
+        )
         mock_load_cell_library.return_value = cell_lib
 
         # Setup netlist
@@ -2326,11 +2408,13 @@ class TestMain:
 
         with patch("src.verilog2spice.cli.parse_yosys_json") as mock_parse_yosys, patch(
             "src.verilog2spice.cli.get_top_module"
-        ) as mock_get_top, patch("src.verilog2spice.cli.generate_netlist") as mock_generate, patch(
+        ) as mock_get_top, patch(
+            "src.verilog2spice.cli.generate_netlist"
+        ) as mock_generate, patch(
             "src.verilog2spice.cli.format_hierarchical"
-        ) as mock_format_hier, patch("src.verilog2spice.cli.validate_spice") as mock_validate, patch(
-            "src.verilog2spice.cli.Path"
-        ) as mock_path_class:
+        ) as mock_format_hier, patch(
+            "src.verilog2spice.cli.validate_spice"
+        ) as mock_validate, patch("src.verilog2spice.cli.Path") as mock_path_class:
             mock_module_info = ModuleInfo(name="my_circuit", ports=[], cells=[])
             mock_parse_yosys.return_value = {"my_circuit": mock_module_info}
             mock_get_top.return_value = mock_module_info
@@ -2353,5 +2437,121 @@ class TestMain:
 
             assert result == 0
             # Should infer output_file from first Verilog file stem
+            mock_format_hier.assert_called_once()
+            mock_validate.assert_called_once()
+
+    @patch("src.verilog2spice.cli.synthesize")
+    @patch("src.verilog2spice.cli.load_cell_library")
+    @patch("src.verilog2spice.cli.setup_logging")
+    @patch("src.verilog2spice.cli.parse_args")
+    @patch("src.verilog2spice.cli.console")
+    @patch("src.verilog2spice.cli.Progress")
+    def test_main_output_file_inference_with_top(
+        self,
+        mock_progress: Mock,
+        mock_console: Mock,
+        mock_parse_args: Mock,
+        mock_setup_logging: Mock,
+        mock_load_cell_library: Mock,
+        mock_synthesize: Mock,
+        temp_dir: Path,
+        sample_yosys_json: dict,
+        sample_cell_library_data: dict,
+    ) -> None:
+        """Test main function inferring output file from --top when no output specified.
+
+        Args:
+            mock_progress: Mocked Progress class.
+            mock_console: Mocked console object.
+            mock_parse_args: Mocked parse_args function.
+            mock_setup_logging: Mocked setup_logging function.
+            mock_load_cell_library: Mocked load_cell_library function.
+            mock_synthesize: Mocked synthesize function.
+            temp_dir: Temporary directory for test files.
+            sample_yosys_json: Sample Yosys JSON data.
+            sample_cell_library_data: Sample cell library data.
+
+        Tests line 337 (output_file = f"{args.top}.sp").
+        """
+        from src.verilog2spice.mapper import CellLibrary
+        from src.verilog2spice.parser import ModuleInfo
+        from src.verilog2spice.synthesizer import Netlist
+
+        # Setup mocks
+        mock_args = Mock()
+        mock_args.verilog_files = [str(temp_dir / "test.v")]
+        mock_args.output = None  # Not provided
+        mock_args.output_dir = str(temp_dir / "output")
+        mock_args.top = "my_circuit"  # Provided
+        mock_args.hierarchical = True
+        mock_args.flattened = False
+        mock_args.both = False
+        mock_args.flatten_level = "logic"
+        mock_args.config = None
+        mock_args.defines = []
+        mock_args.cell_library = None
+        mock_args.cell_metadata = None
+        mock_args.tech = None
+        mock_args.synthesis_script = None
+        mock_args.optimize = False
+        mock_args.include_paths = []
+        mock_args.verify = False
+        mock_args.verify_flatten_levels = False
+        mock_args.verify_reference = None
+        mock_args.verbose = False
+        mock_args.quiet = False
+        mock_args.log = None
+        mock_parse_args.return_value = mock_args
+
+        # Setup cell library
+        cell_lib = CellLibrary(
+            technology="generic", cells=sample_cell_library_data["cells"]
+        )
+        mock_load_cell_library.return_value = cell_lib
+
+        # Setup netlist
+        netlist = Netlist(
+            modules={},
+            top_module="my_circuit",
+            json_data=sample_yosys_json,
+        )
+        mock_synthesize.return_value = netlist
+
+        # Setup progress
+        mock_progress_ctx = MagicMock()
+        mock_progress.return_value.__enter__.return_value = mock_progress_ctx
+        mock_progress.return_value.__exit__.return_value = None
+
+        with patch("src.verilog2spice.cli.parse_yosys_json") as mock_parse_yosys, patch(
+            "src.verilog2spice.cli.get_top_module"
+        ) as mock_get_top, patch(
+            "src.verilog2spice.cli.generate_netlist"
+        ) as mock_generate, patch(
+            "src.verilog2spice.cli.format_hierarchical"
+        ) as mock_format_hier, patch(
+            "src.verilog2spice.cli.validate_spice"
+        ) as mock_validate, patch("src.verilog2spice.cli.Path") as mock_path_class:
+            mock_module_info = ModuleInfo(name="my_circuit", ports=[], cells=[])
+            mock_parse_yosys.return_value = {"my_circuit": mock_module_info}
+            mock_get_top.return_value = mock_module_info
+            mock_generate.return_value = Mock()
+            mock_format_hier.return_value = "* SPICE netlist\n"
+
+            # Create verilog file
+            verilog_file = temp_dir / "test.v"
+            verilog_file.write_text("module my_circuit; endmodule", encoding="utf-8")
+
+            # Mock Path operations
+            def path_side_effect(path_str):
+                return Path(path_str)
+
+            mock_path_class.side_effect = path_side_effect
+            mock_path_class.return_value.write_text = Mock()
+            mock_path_class.return_value.mkdir = Mock()
+
+            result = main()
+
+            assert result == 0
+            # Should infer output_file from args.top (line 337)
             mock_format_hier.assert_called_once()
             mock_validate.assert_called_once()

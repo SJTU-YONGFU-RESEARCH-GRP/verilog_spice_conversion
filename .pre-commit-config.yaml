@@ -28,4 +28,3 @@ repos:
 
   # Note: MyPy type checking is run separately in check_quality.sh
   # to avoid dependency issues with types-all package
-

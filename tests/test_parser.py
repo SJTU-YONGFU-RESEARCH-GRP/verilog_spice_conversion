@@ -238,6 +238,8 @@ class TestGetTopModule:
 
         Tests that lstrip logic works correctly (lines 151-152).
         """
+        from unittest.mock import patch
+
         json_data = {
             "modules": {
                 "\\test_module": {
@@ -249,15 +251,20 @@ class TestGetTopModule:
                     "ports": {},
                     "cells": {},
                     "netnames": {},
-                }
+                },
             }
         }
         modules = parse_yosys_json(json_data)
-        top_module = get_top_module(modules, "test_module")
 
-        # Should match via lstrip logic (lines 150-152)
-        assert top_module.name == "\\test_module"
-        # This should execute the logger.info and return at lines 151-152
+        # Test with logging to verify lines 151-152 are executed
+        with patch("src.verilog2spice.parser.logger") as mock_logger:
+            top_module = get_top_module(modules, "test_module")
+
+            # Should match via lstrip logic (lines 150-152)
+            assert top_module.name == "\\test_module"
+            # This should execute the logger.info at line 151
+            mock_logger.info.assert_called_once()
+            assert "test_module" in mock_logger.info.call_args[0][0]
 
     def test_get_top_module_not_found(self, sample_yosys_json: dict) -> None:
         """Test getting top module when name doesn't exist.
@@ -349,4 +356,3 @@ class TestGetTopModule:
 
         with pytest.raises(ValueError, match="No modules found"):
             get_top_module(modules)
-

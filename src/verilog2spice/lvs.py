@@ -471,9 +471,13 @@ exit
                 cell_types_2_raw if isinstance(cell_types_2_raw, dict) else {}
             )
             instances_1_raw = stats1.get("subcircuit_instances", 0)
-            instances_1: int = instances_1_raw if isinstance(instances_1_raw, int) else 0
+            instances_1: int = (
+                instances_1_raw if isinstance(instances_1_raw, int) else 0
+            )
             instances_2_raw = stats2.get("subcircuit_instances", 0)
-            instances_2: int = instances_2_raw if isinstance(instances_2_raw, int) else 0
+            instances_2: int = (
+                instances_2_raw if isinstance(instances_2_raw, int) else 0
+            )
             size_1_raw = stats1.get("file_size_bytes", 0)
             size_1: int = size_1_raw if isinstance(size_1_raw, int) else 0
             size_2_raw = stats2.get("file_size_bytes", 0)
