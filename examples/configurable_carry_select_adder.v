@@ -15,13 +15,13 @@ module configurable_carry_select_adder #(
 
     // Calculate the number of blocks needed
     localparam NUM_BLOCKS = (DATA_WIDTH + BLOCK_SIZE - 1) / BLOCK_SIZE;
-    
+
     // Internal wires for block interconnection
     // In carry-select adders, combinatorial feedback is by design
     wire [NUM_BLOCKS:0] block_carry;
     assign block_carry[0] = cin;
     assign cout = block_carry[NUM_BLOCKS];
-    
+
     // Generate the adder blocks
     genvar i;
     generate
@@ -37,26 +37,26 @@ module configurable_carry_select_adder #(
             .cout(block_carry[1])
         );
         assign sum[BLOCK_SIZE-1:0] = first_block_sum;
-        
+
         // Remaining blocks use carry-select logic
         for (i = 1; i < NUM_BLOCKS; i = i + 1) begin : carry_select_blocks
             // Calculate the width of this block (handle the case where the last block might be smaller)
-            localparam CURRENT_BLOCK_SIZE = ((i+1)*BLOCK_SIZE <= DATA_WIDTH) ? 
-                                             BLOCK_SIZE : 
+            localparam CURRENT_BLOCK_SIZE = ((i+1)*BLOCK_SIZE <= DATA_WIDTH) ?
+                                             BLOCK_SIZE :
                                              DATA_WIDTH - (i*BLOCK_SIZE);
-            
+
             // Calculate start and end indices for this block
             localparam START_IDX = i * BLOCK_SIZE;
             localparam END_IDX = START_IDX + CURRENT_BLOCK_SIZE - 1;
-            
+
             // Block inputs
             wire [CURRENT_BLOCK_SIZE-1:0] block_a = a[END_IDX:START_IDX];
             wire [CURRENT_BLOCK_SIZE-1:0] block_b = b[END_IDX:START_IDX];
-            
+
             // Two possible results for carry-in 0 and 1
             wire [CURRENT_BLOCK_SIZE-1:0] sum_cin_0, sum_cin_1;
             wire cout_cin_0, cout_cin_1;
-            
+
             // Adder for carry-in = 0 (precompute result)
             csa_ripple_carry_adder #(
                 .WIDTH(CURRENT_BLOCK_SIZE)
@@ -67,7 +67,7 @@ module configurable_carry_select_adder #(
                 .sum(sum_cin_0),
                 .cout(cout_cin_0)
             );
-            
+
             // Adder for carry-in = 1 (precompute result)
             csa_ripple_carry_adder #(
                 .WIDTH(CURRENT_BLOCK_SIZE)
@@ -78,7 +78,7 @@ module configurable_carry_select_adder #(
                 .sum(sum_cin_1),
                 .cout(cout_cin_1)
             );
-            
+
             // Select the correct output based on carry-in from previous block
             wire select = block_carry[i];
             assign sum[END_IDX:START_IDX] = select ? sum_cin_1 : sum_cin_0;
@@ -101,7 +101,7 @@ module csa_ripple_carry_adder #(
     wire [WIDTH:0] carry;
     assign carry[0] = cin;
     assign cout = carry[WIDTH];
-    
+
     genvar i;
     generate
         for (i = 0; i < WIDTH; i = i + 1) begin : full_adders
@@ -130,4 +130,4 @@ endmodule
 
 /* verilator lint_on DECLFILENAME */
 /* verilator lint_on UNOPTFLAT */
-/* verilator lint_on EOFNEWLINE */ 
+/* verilator lint_on EOFNEWLINE */

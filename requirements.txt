@@ -26,4 +26,3 @@ pyyaml>=6.0
 # - macOS: brew install verilator
 # - Windows: Use WSL or install via MSYS2/MinGW
 # Minimum version: 5.0 or higher required (for -Wno-EOFNEWLINE support)
-

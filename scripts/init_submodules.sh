@@ -67,7 +67,7 @@ check_gitmodules() {
 # Function to get list of submodules
 get_submodules() {
     local submodules=()
-    
+
     # Get submodules from .gitmodules file
     if [[ -f ".gitmodules" ]]; then
         while IFS= read -r line; do
@@ -76,17 +76,17 @@ get_submodules() {
             fi
         done < ".gitmodules"
     fi
-    
+
     # Also check for submodules in git config
     local config_submodules
     config_submodules=$(git config --file .gitmodules --get-regexp path | cut -d' ' -f2 2>/dev/null || true)
-    
+
     for submodule in $config_submodules; do
         if [[ ! " ${submodules[*]} " =~ " ${submodule} " ]]; then
             submodules+=("$submodule")
         fi
     done
-    
+
     echo "${submodules[@]}"
 }
 
@@ -94,23 +94,23 @@ get_submodules() {
 init_submodules() {
     local recursive_flag=""
     local force_flag=""
-    
+
     if [[ "$RECURSIVE" == true ]]; then
         recursive_flag="--recursive"
         print_status $BLUE "Initializing submodules recursively..."
     else
         print_status $BLUE "Initializing submodules..."
     fi
-    
+
     if [[ "$FORCE" == true ]]; then
         force_flag="--force"
         print_status $YELLOW "Force flag enabled - will update even if already initialized"
     fi
-    
+
     # Initialize submodules
     local cmd="git submodule update --init $recursive_flag $force_flag"
     print_status $BLUE "Executing: $cmd"
-    
+
     if eval "$cmd"; then
         print_status $GREEN "Successfully initialized submodules"
     else
@@ -159,41 +159,41 @@ parse_args() {
 # Main function
 main() {
     print_status $BLUE "Starting git submodule initialization..."
-    
+
     # Parse arguments
     parse_args "$@"
-    
+
     # Validate environment
     check_git
     check_git_repo
     check_gitmodules
-    
+
     # Get list of submodules
     local submodules
     submodules=($(get_submodules))
-    
+
     if [[ ${#submodules[@]} -eq 0 ]]; then
         print_status $YELLOW "No submodules found in this repository"
         exit 0
     fi
-    
+
     print_status $BLUE "Found ${#submodules[@]} submodule(s):"
     for submodule in "${submodules[@]}"; do
         echo "  - $submodule"
     done
     echo
-    
+
     # Initialize submodules
     init_submodules
-    
+
     # Show status and summary
     echo
     show_submodule_status
     echo
     show_submodule_summary
-    
+
     print_status $GREEN "Submodule initialization completed successfully!"
-    
+
     # Show next steps
     echo ""
     print_status $YELLOW "Next steps:"

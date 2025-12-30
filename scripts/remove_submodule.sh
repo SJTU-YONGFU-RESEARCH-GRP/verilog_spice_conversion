@@ -68,7 +68,7 @@ check_gitmodules() {
 # Function to get list of submodules
 get_submodules() {
     local submodules=()
-    
+
     if [[ -f ".gitmodules" ]]; then
         while IFS= read -r line; do
             if [[ $line =~ ^[[:space:]]*path[[:space:]]*=[[:space:]]*(.+)$ ]]; then
@@ -76,7 +76,7 @@ get_submodules() {
             fi
         done < ".gitmodules"
     fi
-    
+
     echo "${submodules[@]}"
 }
 
@@ -85,13 +85,13 @@ check_submodule_exists() {
     local submodule_path=$1
     local submodules
     submodules=($(get_submodules))
-    
+
     for submodule in "${submodules[@]}"; do
         if [[ "$submodule" == "$submodule_path" ]]; then
             return 0
         fi
     done
-    
+
     return 1
 }
 
@@ -105,9 +105,9 @@ get_submodule_url() {
 backup_submodule_info() {
     local submodule_path=$1
     local backup_file=".submodule_remove_backup_$(date +%Y%m%d_%H%M%S).txt"
-    
+
     print_status $BLUE "Creating backup of submodule information..."
-    
+
     {
         echo "Submodule removal backup created on $(date)"
         echo "Submodule path: $submodule_path"
@@ -121,23 +121,23 @@ backup_submodule_info() {
         echo ".gitmodules content:"
         cat .gitmodules
     } > "$backup_file"
-    
+
     print_status $GREEN "Backup saved to: $backup_file"
 }
 
 # Function to check for uncommitted changes
 check_uncommitted_changes() {
     local submodule_path=$1
-    
+
     if [[ -d "$submodule_path" ]]; then
         local changes
         changes=$(cd "$submodule_path" && git status --porcelain 2>/dev/null || echo "")
-        
+
         if [[ -n "$changes" ]]; then
             print_status $YELLOW "Warning: Submodule '$submodule_path' has uncommitted changes:"
             echo "$changes"
             echo
-            
+
             if [[ "$FORCE" != true ]]; then
                 read -p "Do you want to continue anyway? (y/N): " -n 1 -r
                 echo
@@ -153,33 +153,33 @@ check_uncommitted_changes() {
 # Function to remove submodule
 remove_submodule() {
     local submodule_path=$1
-    
+
     print_status $BLUE "Removing submodule: $submodule_path"
-    
+
     # Step 1: Remove the submodule from the working tree and index
     print_status $BLUE "Step 1: Removing from working tree and index..."
     git submodule deinit -f "$submodule_path"
-    
+
     # Step 2: Remove the submodule from .git/modules
     print_status $BLUE "Step 2: Removing from .git/modules..."
     rm -rf ".git/modules/$submodule_path"
-    
+
     # Step 3: Remove the submodule directory
     print_status $BLUE "Step 3: Removing submodule directory..."
     git rm -f "$submodule_path"
-    
+
     # Step 4: Remove the submodule entry from .gitmodules
     print_status $BLUE "Step 4: Removing from .gitmodules..."
-    
+
     # Create a temporary file for the new .gitmodules content
     local temp_file
     temp_file=$(mktemp)
-    
+
     # Copy .gitmodules content, excluding the submodule to be removed
     local in_submodule=false
     local submodule_name
     submodule_name=$(basename "$submodule_path")
-    
+
     while IFS= read -r line; do
         if [[ $line =~ ^\[submodule\ \"([^\"]+)\"\]$ ]]; then
             if [[ "${BASH_REMATCH[1]}" == "$submodule_path" ]]; then
@@ -192,14 +192,14 @@ remove_submodule() {
             echo "$line" >> "$temp_file"
         fi
     done < ".gitmodules"
-    
+
     # Replace .gitmodules with the filtered content
     mv "$temp_file" ".gitmodules"
-    
+
     # Step 5: Stage the changes
     print_status $BLUE "Step 5: Staging changes..."
     git add .gitmodules
-    
+
     print_status $GREEN "Submodule removal completed successfully!"
 }
 
@@ -238,13 +238,13 @@ confirm_removal() {
     local submodule_path=$1
     local submodule_url
     submodule_url=$(get_submodule_url "$submodule_path")
-    
+
     echo
     print_status $YELLOW "About to remove submodule:"
     echo "  Path: $submodule_path"
     echo "  URL: $submodule_url"
     echo
-    
+
     if [[ "$FORCE" != true ]]; then
         read -p "Are you sure you want to continue? (y/N): " -n 1 -r
         echo
@@ -258,22 +258,22 @@ confirm_removal() {
 # Main function
 main() {
     print_status $BLUE "Starting git submodule removal..."
-    
+
     # Parse arguments
     parse_args "$@"
-    
+
     # Check if submodule path is provided
     if [[ -z "$SUBMODULE_PATH" ]]; then
         print_status $RED "Error: Submodule path is required"
         show_usage
         exit 1
     fi
-    
+
     # Validate environment
     check_git
     check_git_repo
     check_gitmodules
-    
+
     # Check if submodule exists
     if ! check_submodule_exists "$SUBMODULE_PATH"; then
         print_status $RED "Error: Submodule '$SUBMODULE_PATH' not found"
@@ -285,24 +285,24 @@ main() {
         done
         exit 1
     fi
-    
+
     # Backup submodule information
     backup_submodule_info "$SUBMODULE_PATH"
-    
+
     # Check for uncommitted changes
     check_uncommitted_changes "$SUBMODULE_PATH"
-    
+
     # Confirm removal
     confirm_removal "$SUBMODULE_PATH"
-    
+
     # Remove the submodule
     remove_submodule "$SUBMODULE_PATH"
-    
+
     # Show final status
     echo
     print_status $BLUE "Final repository status:"
     git status
-    
+
     # Show next steps
     echo ""
     print_status $YELLOW "Next steps:"

@@ -18,7 +18,7 @@ module configurable_brent_kung_adder #(
     // Generate and Propagate signals
     wire [DATA_WIDTH-1:0] g;  // Generate
     wire [DATA_WIDTH-1:0] p;  // Propagate
-    
+
     // Generate initial P and G values
     genvar i;
     generate
@@ -27,25 +27,25 @@ module configurable_brent_kung_adder #(
             assign p[i] = a[i] ^ b[i];                // Propagate: carry is propagated through this bit (XOR for proper addition)
         end
     endgenerate
-    
+
     // Carry signals
     wire [DATA_WIDTH:0] carries;
     assign carries[0] = cin;  // Initial carry-in
-    
+
     // Generate carries using a simplified prefix tree structure
     generate
         for (i = 0; i < DATA_WIDTH; i = i + 1) begin : carry_gen
             assign carries[i+1] = g[i] | (p[i] & carries[i]);
         end
     endgenerate
-    
+
     // Compute the sum bits
     generate
         for (i = 0; i < DATA_WIDTH; i = i + 1) begin : sum_gen
             assign sum[i] = p[i] ^ carries[i];  // sum = a ^ b ^ carry_in
         end
     endgenerate
-    
+
     // Final carry-out
     assign cout = carries[DATA_WIDTH];
 
@@ -56,4 +56,4 @@ endmodule
 /* verilator lint_on EOFNEWLINE */
 /* verilator lint_on UNUSEDGENVAR */
 /* verilator lint_on UNUSEDSIGNAL */
-/* verilator lint_on GENUNNAMED */ 
+/* verilator lint_on GENUNNAMED */

@@ -38,18 +38,18 @@ show_usage() {
 # Function to validate git repository URL
 validate_repo_url() {
     local url=$1
-    
+
     # Check if URL is not empty
     if [[ -z "$url" ]]; then
         print_status $RED "Error: Repository URL cannot be empty"
         return 1
     fi
-    
+
     # Check if URL looks like a git repository
     if [[ ! "$url" =~ ^(https?://|git@|ssh://).*\.git$ ]]; then
         print_status $YELLOW "Warning: URL doesn't end with .git, but proceeding anyway"
     fi
-    
+
     return 0
 }
 
@@ -72,7 +72,7 @@ check_git_repo() {
 # Function to check if submodule already exists
 check_submodule_exists() {
     local path=$1
-    
+
     if [[ -d "$path" ]] && [[ -f "$path/.git" ]]; then
         print_status $YELLOW "Warning: Directory $path already exists and appears to be a git submodule"
         read -p "Do you want to continue? (y/N): " -n 1 -r
@@ -92,39 +92,39 @@ main() {
         show_usage
         exit 1
     fi
-    
+
     local repo_url=$1
     local submodule_path=${2:-}
     local branch=${3:-}
-    
+
     print_status $BLUE "Starting git submodule addition..."
-    
+
     # Validate inputs
     check_git
     check_git_repo
     validate_repo_url "$repo_url"
-    
+
     # If no path specified, extract from URL
     if [[ -z "$submodule_path" ]]; then
         submodule_path=$(basename "$repo_url" .git)
         print_status $YELLOW "No path specified, using: $submodule_path"
     fi
-    
+
     # Check if submodule already exists
     check_submodule_exists "$submodule_path"
-    
+
     # Build git submodule add command
     local cmd="git submodule add"
-    
+
     if [[ -n "$branch" ]]; then
         cmd="$cmd -b $branch"
         print_status $BLUE "Adding submodule with branch: $branch"
     fi
-    
+
     cmd="$cmd $repo_url $submodule_path"
-    
+
     print_status $BLUE "Executing: $cmd"
-    
+
     # Execute the command
     if eval "$cmd"; then
         print_status $GREEN "Successfully added submodule: $submodule_path"
@@ -132,7 +132,7 @@ main() {
         if [[ -n "$branch" ]]; then
             print_status $BLUE "Branch: $branch"
         fi
-        
+
         # Show next steps
         echo ""
         print_status $YELLOW "Next steps:"

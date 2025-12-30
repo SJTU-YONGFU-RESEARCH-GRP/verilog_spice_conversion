@@ -1,0 +1,31 @@
+# Pre-commit hooks configuration for Verilog to SPICE Conversion
+# See https://pre-commit.com for more information
+
+repos:
+  # Ruff for linting and formatting
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.9
+    hooks:
+      # Ruff linting
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      # Ruff formatting
+      - id: ruff-format
+
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-json
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: debug-statements
+      - id: mixed-line-ending
+
+  # Note: MyPy type checking is run separately in check_quality.sh
+  # to avoid dependency issues with types-all package
+

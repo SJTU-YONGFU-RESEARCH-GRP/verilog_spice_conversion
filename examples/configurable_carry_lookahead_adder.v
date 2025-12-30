@@ -16,16 +16,16 @@ module configurable_carry_lookahead_adder #(
 
     // Calculate the number of groups needed
     localparam NUM_GROUPS = (DATA_WIDTH + GROUP_SIZE - 1) / GROUP_SIZE;
-    
+
     // Generate and Propagate signals for each bit
     wire [DATA_WIDTH-1:0] g;          // Generate
     wire [DATA_WIDTH-1:0] p;          // Propagate
-    
+
     // Carry signals between groups
     wire [NUM_GROUPS:0] group_carry;
     assign group_carry[0] = cin;      // Input carry
     assign cout = group_carry[NUM_GROUPS]; // Output carry
-    
+
     // Generate P and G signals for each bit
     genvar i;
     generate
@@ -34,22 +34,22 @@ module configurable_carry_lookahead_adder #(
             assign p[i] = a[i] ^ b[i];         // Propagate: carry is propagated through this bit (XOR for proper addition)
         end
     endgenerate
-    
+
     // Carry signals for each bit
     wire [DATA_WIDTH-1:0] c_internal;
-    
+
     // For each group, implement the carry lookahead logic
     generate
         for (i = 0; i < NUM_GROUPS; i = i + 1) begin : cla_groups
             // Calculate the width of this group (handle the case where the last group might be smaller)
-            localparam CURRENT_GROUP_SIZE = ((i+1)*GROUP_SIZE <= DATA_WIDTH) ? 
-                                            GROUP_SIZE : 
+            localparam CURRENT_GROUP_SIZE = ((i+1)*GROUP_SIZE <= DATA_WIDTH) ?
+                                            GROUP_SIZE :
                                             DATA_WIDTH - (i*GROUP_SIZE);
-            
+
             // Calculate start and end indices for this group
             localparam START_IDX = i * GROUP_SIZE;
             localparam END_IDX = START_IDX + CURRENT_GROUP_SIZE - 1;
-            
+
             // Carry lookahead logic for this group
             cla_group #(
                 .GROUP_SIZE(CURRENT_GROUP_SIZE)
@@ -62,7 +62,7 @@ module configurable_carry_lookahead_adder #(
             );
         end
     endgenerate
-    
+
     // Compute the sum
     generate
         for (i = 0; i < DATA_WIDTH; i = i + 1) begin : sum_logic
@@ -82,12 +82,12 @@ module cla_group #(
     output wire cout,                  // Carry-out from this group
     output wire [GROUP_SIZE-1:0] c     // Carry signals for each bit in the group
 );
-    
+
     // Internal carries (c[0] is cin)
     wire [GROUP_SIZE:0] c_internal;
     assign c_internal[0] = cin;
     assign cout = c_internal[GROUP_SIZE];
-    
+
     // Connect the internal carries to the output
     genvar i;
     generate
@@ -95,7 +95,7 @@ module cla_group #(
             assign c[i] = c_internal[i];
         end
     endgenerate
-    
+
     // Calculate all carries using CLA equations
     generate
         for (i = 1; i <= GROUP_SIZE; i = i + 1) begin : cla_logic
@@ -104,7 +104,7 @@ module cla_group #(
             // 2. Carry-in propagated through all bits
             wire carry_term = g[i-1];
             wire prop_term = p[i-1] & c_internal[i-1];
-            
+
             assign c_internal[i] = carry_term | prop_term;
         end
     endgenerate
@@ -113,4 +113,4 @@ endmodule
 /* verilator lint_on DECLFILENAME */
 /* verilator lint_on UNOPTFLAT */
 /* verilator lint_on EOFNEWLINE */
-/* verilator lint_on GENUNNAMED */ 
+/* verilator lint_on GENUNNAMED */

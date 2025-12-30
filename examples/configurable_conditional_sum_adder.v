@@ -16,41 +16,41 @@ module configurable_conditional_sum_adder #(
 
     // Initial block ripple-carry adders
     genvar i, j;
-    
+
     // Round up the number of blocks
     localparam NUM_BLOCKS = (DATA_WIDTH + BLOCK_SIZE - 1) / BLOCK_SIZE;
-    
+
     // Pre-compute sums and carries for each block for both carry-in 0 and 1
     wire [NUM_BLOCKS-1:0][BLOCK_SIZE-1:0] sum_cin_0;  // Sum when carry-in = 0
     wire [NUM_BLOCKS-1:0][BLOCK_SIZE-1:0] sum_cin_1;  // Sum when carry-in = 1
     wire [NUM_BLOCKS-1:0] cout_cin_0;                 // Carry-out when carry-in = 0
     wire [NUM_BLOCKS-1:0] cout_cin_1;                 // Carry-out when carry-in = 1
-    
+
     // Intermediate carries
     wire [NUM_BLOCKS:0] carry;
     assign carry[0] = cin;
     assign cout = carry[NUM_BLOCKS];
-    
+
     // Generate the ripple-carry adders for each block
     generate
         for (i = 0; i < NUM_BLOCKS; i = i + 1) begin : blocks
             // Calculate the width of this block (handle the case where the last block might be smaller)
-            localparam CURRENT_BLOCK_SIZE = ((i+1)*BLOCK_SIZE <= DATA_WIDTH) ? 
-                                            BLOCK_SIZE : 
+            localparam CURRENT_BLOCK_SIZE = ((i+1)*BLOCK_SIZE <= DATA_WIDTH) ?
+                                            BLOCK_SIZE :
                                             DATA_WIDTH - (i*BLOCK_SIZE);
-            
+
             // Calculate start and end indices for this block
             localparam START_IDX = i * BLOCK_SIZE;
             localparam END_IDX = START_IDX + CURRENT_BLOCK_SIZE - 1;
-            
+
             // Block inputs
             wire [CURRENT_BLOCK_SIZE-1:0] block_a = a[END_IDX:START_IDX];
             wire [CURRENT_BLOCK_SIZE-1:0] block_b = b[END_IDX:START_IDX];
-            
+
             // Compute sum and carry for carry-in = 0
             wire [CURRENT_BLOCK_SIZE-1:0] block_sum_cin_0;
             wire block_cout_cin_0;
-            
+
             cond_sum_rca #(
                 .WIDTH(CURRENT_BLOCK_SIZE)
             ) rca_cin_0 (
@@ -60,11 +60,11 @@ module configurable_conditional_sum_adder #(
                 .sum(block_sum_cin_0),
                 .cout(block_cout_cin_0)
             );
-            
+
             // Compute sum and carry for carry-in = 1
             wire [CURRENT_BLOCK_SIZE-1:0] block_sum_cin_1;
             wire block_cout_cin_1;
-            
+
             cond_sum_rca #(
                 .WIDTH(CURRENT_BLOCK_SIZE)
             ) rca_cin_1 (
@@ -74,7 +74,7 @@ module configurable_conditional_sum_adder #(
                 .sum(block_sum_cin_1),
                 .cout(block_cout_cin_1)
             );
-            
+
             // Store the results
             if (CURRENT_BLOCK_SIZE == BLOCK_SIZE) begin : full_block
                 // This is a full block
@@ -96,13 +96,13 @@ module configurable_conditional_sum_adder #(
                     end
                 end
             end
-            
+
             assign cout_cin_0[i] = block_cout_cin_0;
             assign cout_cin_1[i] = block_cout_cin_1;
-            
+
             // Select the correct output based on carry
             assign carry[i+1] = carry[i] ? cout_cin_1[i] : cout_cin_0[i];
-            
+
             // Determine which sum to use based on the carry-in to this block
             for (j = 0; j < CURRENT_BLOCK_SIZE; j = j + 1) begin : block_sum_select
                 assign sum[START_IDX + j] = carry[i] ? sum_cin_1[i][j] : sum_cin_0[i][j];
@@ -125,7 +125,7 @@ module cond_sum_rca #(
     wire [WIDTH:0] carry;
     assign carry[0] = cin;
     assign cout = carry[WIDTH];
-    
+
     genvar i;
     generate
         for (i = 0; i < WIDTH; i = i + 1) begin : full_adders
@@ -138,4 +138,4 @@ endmodule
 /* verilator lint_on DECLFILENAME */
 /* verilator lint_on UNOPTFLAT */
 /* verilator lint_on EOFNEWLINE */
-/* verilator lint_on GENUNNAMED */ 
+/* verilator lint_on GENUNNAMED */

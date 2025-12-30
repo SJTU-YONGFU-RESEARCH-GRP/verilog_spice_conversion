@@ -79,7 +79,7 @@ check_submodules_exist() {
 # Function to get list of submodules
 get_submodules() {
     local submodules=()
-    
+
     if [[ -f ".gitmodules" ]]; then
         while IFS= read -r line; do
             if [[ $line =~ ^[[:space:]]*path[[:space:]]*=[[:space:]]*(.+)$ ]]; then
@@ -87,7 +87,7 @@ get_submodules() {
             fi
         done < ".gitmodules"
     fi
-    
+
     echo "${submodules[@]}"
 }
 
@@ -96,13 +96,13 @@ check_submodule_exists() {
     local submodule_path=$1
     local submodules
     submodules=($(get_submodules))
-    
+
     for submodule in "${submodules[@]}"; do
         if [[ "$submodule" == "$submodule_path" ]]; then
             return 0
         fi
     done
-    
+
     return 1
 }
 
@@ -110,9 +110,9 @@ check_submodule_exists() {
 backup_submodule_state() {
     local submodule_path=$1
     local backup_file=".submodule_backup_$(date +%Y%m%d_%H%M%S).txt"
-    
+
     print_status $BLUE "Creating backup of submodule state..."
-    
+
     {
         echo "Submodule backup created on $(date)"
         echo "Submodule: $submodule_path"
@@ -121,7 +121,7 @@ backup_submodule_state() {
         echo "Status:"
         cd "$submodule_path" && git status --porcelain 2>/dev/null || echo "Not a git repository"
     } > "$backup_file"
-    
+
     print_status $GREEN "Backup saved to: $backup_file"
 }
 
@@ -129,23 +129,23 @@ backup_submodule_state() {
 checkout_submodule_branch() {
     local submodule_path=$1
     local branch_name=$2
-    
+
     if [[ ! -d "$submodule_path" ]]; then
         print_status $YELLOW "Warning: Submodule directory '$submodule_path' does not exist, skipping branch checkout"
         return 1
     fi
-    
+
     print_status $BLUE "Checking out branch '$branch_name' in submodule: $submodule_path"
-    
+
     (
         cd "$submodule_path" || exit 1
-        
+
         # Fetch latest from remote
         print_status $BLUE "Fetching latest from remote..."
         if ! git fetch origin 2>/dev/null; then
             print_status $YELLOW "Warning: Failed to fetch from remote, continuing with existing data"
         fi
-        
+
         # Check if branch exists remotely
         if git ls-remote --heads origin "$branch_name" >/dev/null 2>&1; then
             # Branch exists remotely
@@ -182,14 +182,14 @@ update_submodules() {
     local recursive_flag=""
     local remote_flag=""
     local force_flag=""
-    
+
     if [[ "$RECURSIVE" == true ]]; then
         recursive_flag="--recursive"
         print_status $BLUE "Updating submodules recursively..."
     else
         print_status $BLUE "Updating submodules..."
     fi
-    
+
     if [[ "$REMOTE" == true ]]; then
         remote_flag="--remote"
         if [[ -n "$BRANCH" ]]; then
@@ -198,34 +198,34 @@ update_submodules() {
             print_status $BLUE "Updating to latest commits on tracked branches..."
         fi
     fi
-    
+
     if [[ "$FORCE" == true ]]; then
         force_flag="--force"
         print_status $YELLOW "Force flag enabled - will update even with local changes"
     fi
-    
+
     # Build the command
     local cmd="git submodule update"
-    
+
     if [[ -n "$recursive_flag" ]]; then
         cmd="$cmd $recursive_flag"
     fi
-    
+
     if [[ -n "$remote_flag" ]]; then
         cmd="$cmd $remote_flag"
     fi
-    
+
     if [[ -n "$force_flag" ]]; then
         cmd="$cmd $force_flag"
     fi
-    
+
     # Add specific submodule path if provided
     if [[ -n "$SUBMODULE_PATH" ]]; then
         cmd="$cmd $SUBMODULE_PATH"
     fi
-    
+
     print_status $BLUE "Executing: $cmd"
-    
+
     # Execute the command
     if eval "$cmd"; then
         print_status $GREEN "Successfully updated submodules"
@@ -233,16 +233,16 @@ update_submodules() {
         print_status $RED "Failed to update submodules"
         exit 1
     fi
-    
+
     # If branch is specified, checkout that branch in each submodule
     if [[ -n "$BRANCH" ]]; then
         if [[ "$REMOTE" != true ]]; then
             print_status $RED "Error: --branch requires --remote flag"
             exit 1
         fi
-        
+
         print_status $BLUE "Checking out branch '$BRANCH' in submodules..."
-        
+
         local submodules_to_update=()
         if [[ -n "$SUBMODULE_PATH" ]]; then
             submodules_to_update=("$SUBMODULE_PATH")
@@ -251,7 +251,7 @@ update_submodules() {
             submodules=($(get_submodules))
             submodules_to_update=("${submodules[@]}")
         fi
-        
+
         for submodule in "${submodules_to_update[@]}"; do
             if [[ -d "$submodule" ]]; then
                 checkout_submodule_branch "$submodule" "$BRANCH"
@@ -327,22 +327,22 @@ parse_args() {
 # Main function
 main() {
     print_status $BLUE "Starting git submodule update..."
-    
+
     # Parse arguments
     parse_args "$@"
-    
+
     # Validate that --branch is only used with --remote
     if [[ -n "$BRANCH" ]] && [[ "$REMOTE" != true ]]; then
         print_status $RED "Error: --branch requires --remote flag"
         show_usage
         exit 1
     fi
-    
+
     # Validate environment
     check_git
     check_git_repo
     check_submodules_exist
-    
+
     # Validate specific submodule if provided
     if [[ -n "$SUBMODULE_PATH" ]]; then
         if ! check_submodule_exists "$SUBMODULE_PATH"; then
@@ -355,9 +355,9 @@ main() {
             done
             exit 1
         fi
-        
+
         print_status $BLUE "Updating specific submodule: $SUBMODULE_PATH"
-        
+
         # Backup state if updating specific submodule
         if [[ -d "$SUBMODULE_PATH" ]]; then
             backup_submodule_state "$SUBMODULE_PATH"
@@ -372,21 +372,21 @@ main() {
         done
         echo
     fi
-    
+
     # Show current status before update
     show_submodule_status
-    
+
     # Update submodules
     update_submodules
-    
+
     # Show status after update
     echo
     show_submodule_status
     echo
     show_submodule_summary
-    
+
     print_status $GREEN "Submodule update completed successfully!"
-    
+
     # Show next steps
     echo ""
     print_status $YELLOW "Next steps:"

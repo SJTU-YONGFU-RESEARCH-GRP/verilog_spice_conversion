@@ -19,4 +19,3 @@
 
 # Note: This is a template. The actual script is generated
 # dynamically by the synthesizer module based on input files.
-

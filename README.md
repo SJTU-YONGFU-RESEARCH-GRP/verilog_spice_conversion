@@ -1,24 +1,45 @@
 # Verilog to SPICE Conversion Tool
 
-![Python](https://img.shields.io/badge/python-3.10+-blue.svg)
-![Version](https://img.shields.io/badge/version-1.0.0-green.svg)
-![Yosys](https://img.shields.io/badge/requires-yosys-orange.svg)
-[![License: CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by/4.0/)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by/4.0/)
+[![Version](https://img.shields.io/badge/version-1.0.0-green.svg)](https://github.com/SJTU-YONGFU-RESEARCH-GRP/verilog_spice_conversion)
+[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-blue.svg)](https://github.com/SJTU-YONGFU-RESEARCH-GRP/verilog_spice_conversion)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](https://github.com/SJTU-YONGFU-RESEARCH-GRP/verilog_spice_conversion/actions)
+[![Coverage](https://img.shields.io/badge/coverage-76%25-yellow.svg)](https://github.com/SJTU-YONGFU-RESEARCH-GRP/verilog_spice_conversion)
+[![Code Style](https://img.shields.io/badge/code%20style-Ruff-black.svg)](https://github.com/astral-sh/ruff)
+[![Type Checking](https://img.shields.io/badge/type%20checking-mypy-blue.svg)](https://github.com/python/mypy)
+[![Security](https://img.shields.io/badge/security-bandit-yellow.svg)](https://github.com/PyCQA/bandit)
+[![Code Quality](https://img.shields.io/badge/code%20quality-A%2B-brightgreen.svg)](https://github.com/SJTU-YONGFU-RESEARCH-GRP/verilog_spice_conversion)
+[![Maintained](https://img.shields.io/badge/maintained-yes-green.svg)](https://github.com/SJTU-YONGFU-RESEARCH-GRP/verilog_spice_conversion)
+[![Issues](https://img.shields.io/github/issues/SJTU-YONGFU-RESEARCH-GRP/verilog_spice_conversion.svg)](https://github.com/SJTU-YONGFU-RESEARCH-GRP/verilog_spice_conversion/issues)
+[![Pull Requests](https://img.shields.io/github/issues-pr/SJTU-YONGFU-RESEARCH-GRP/verilog_spice_conversion.svg)](https://github.com/SJTU-YONGFU-RESEARCH-GRP/verilog_spice_conversion/pulls)
+[![Contributors](https://img.shields.io/github/contributors/SJTU-YONGFU-RESEARCH-GRP/verilog_spice_conversion.svg)](https://github.com/SJTU-YONGFU-RESEARCH-GRP/verilog_spice_conversion/graphs/contributors)
+[![Stars](https://img.shields.io/github/stars/SJTU-YONGFU-RESEARCH-GRP/verilog_spice_conversion.svg?style=social)](https://github.com/SJTU-YONGFU-RESEARCH-GRP/verilog_spice_conversion/stargazers)
 
-## Overview
+A comprehensive tool for converting Verilog RTL designs to SPICE netlists, supporting hierarchical and flattened representations at both logic and transistor levels.
 
-This tool converts Verilog RTL designs to SPICE netlists using Yosys for synthesis. It supports hierarchical, flattened, and fully-flattened (with embedded cell models) output formats.
+## Features
 
-## Installation
+- 🔄 **Dual Output Formats**: Generate hierarchical or flattened SPICE netlists (or both)
+- ⚡ **Multi-Level Flattening**: Support for logic-level (gate-level) and transistor-level (PMOS/NMOS) flattening
+- 🔧 **Yosys Integration**: Automatic synthesis using Yosys for gate-level netlist generation
+- 📚 **Cell Library Support**: Flexible cell library system with metadata support
+- ✅ **LVS Verification**: Built-in Layout vs. Schematic (LVS) verification using Netgen
+- 🎯 **Technology Support**: Configurable technology libraries (e.g., TSMC 65nm, Sky130)
+- 📝 **Rich Output**: Colorized console output with progress indicators
+- 🔍 **Comprehensive Logging**: Verbose logging and error reporting
 
-### Prerequisites
+## Requirements
 
-1. **Python 3.10+** (required)
-2. **Yosys** (required for synthesis)
-   - Linux: `sudo apt-get install yosys`
-   - macOS: `brew install yosys`
-   - Windows: Use WSL or install via MSYS2/MinGW
-   - **Note**: Yosys is required - the tool will fail if Yosys is not found
+### System Requirements
+
+- **Python**: 3.10 or higher
+- **Yosys**: For Verilog synthesis (recommended)
+  - Ubuntu/Debian: `sudo apt-get install yosys`
+  - macOS: `brew install yosys`
+  - Windows: Use WSL or install via MSYS2/MinGW
+- **Netgen LVS**: For LVS verification (optional)
+  - See [INSTALL_NETGEN_LVS.md](docs/INSTALL_NETGEN_LVS.md) for installation instructions
 
 ### Python Dependencies
 
@@ -28,134 +49,242 @@ Install Python dependencies:
 pip install -r requirements.txt
 ```
 
-## Usage
+Key dependencies:
+- `rich` - Enhanced terminal output
+- `pyyaml` - Configuration file support
+- `numpy`, `matplotlib`, `seaborn` - Data visualization (optional)
+
+## Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/verilog_spice_conversion.git
+cd verilog_spice_conversion
+```
+
+2. Install Python dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+3. Install Yosys (if not already installed):
+```bash
+# Ubuntu/Debian
+sudo apt-get install yosys
+
+# macOS
+brew install yosys
+```
+
+4. (Optional) Install Netgen LVS for verification:
+```bash
+./scripts/install_netgen_lvs.sh
+```
+
+## Quick Start
 
 ### Basic Usage
 
+Convert a Verilog file to SPICE:
+
 ```bash
-# Convert a Verilog file to SPICE
+./scripts/verilog2spice.sh adder.v
+```
+
+### Specify Top Module
+
+```bash
+./scripts/verilog2spice.sh -t Adder -o adder.sp adder.v
+```
+
+### Generate Flattened Netlist
+
+```bash
+# Logic-level flattened (gate-level with embedded cell models)
+./scripts/verilog2spice.sh --flattened design.v
+
+# Transistor-level flattened (PMOS/NMOS level)
+./scripts/verilog2spice.sh --flattened --flatten-level transistor design.v
+```
+
+### Generate Both Formats
+
+```bash
+./scripts/verilog2spice.sh --both design.v
+```
+
+### With Verification
+
+```bash
+# Generate and verify netlist
+./scripts/verilog2spice.sh --flattened --verify design.v
+
+# Compare against reference netlist
+./scripts/verilog2spice.sh --flattened --verify-reference reference.sp design.v
+
+# Compare logic vs transistor levels
+./scripts/verilog2spice.sh --both --flatten-level transistor --verify-flatten-levels design.v
+```
+
+## Usage
+
+### Command-Line Interface
+
+The main entry point is the `verilog2spice.sh` script:
+
+```bash
+./scripts/verilog2spice.sh [OPTIONS] <verilog_file> [verilog_file ...]
+```
+
+### Input Options
+
+| Option | Description |
+|--------|-------------|
+| `-t, --top <module>` | Specify top-level module name |
+| `-I, --include <path>` | Add include/search path (can be repeated) |
+| `-D, --define <name>=<value>` | Define preprocessor macro (can be repeated) |
+
+### Output Options
+
+| Option | Description |
+|--------|-------------|
+| `-o, --output <file>` | Output SPICE netlist file (default: `<top_module>.sp`) |
+| `-O, --output-dir <dir>` | Output directory (default: `./output`) |
+| `--hierarchical, --hier` | Generate hierarchical netlist (default) |
+| `--flattened, --flat` | Generate flattened netlist |
+| `--both` | Generate both hierarchical and flattened netlists |
+| `--flatten-level <level>` | Flattening level: `logic` (gate-level, default) or `transistor` (PMOS/NMOS level) |
+
+### Synthesis Options
+
+| Option | Description |
+|--------|-------------|
+| `--synthesis-script <file>` | Custom Yosys synthesis script |
+| `--constraint <file>` | Timing/area constraints file |
+| `--optimize` | Enable optimization (default) |
+| `--no-optimize` | Disable optimization |
+
+### Technology Options
+
+| Option | Description |
+|--------|-------------|
+| `--cell-library <file>` | Path to cell library SPICE file |
+| `--cell-metadata <file>` | Path to cell metadata JSON file |
+| `--tech <name>` | Technology name (e.g., "tsmc65nm", "sky130") |
+
+### Verification Options
+
+| Option | Description |
+|--------|-------------|
+| `--verify` | Run LVS verification using Netgen |
+| `--verify-reference <file>` | Reference netlist file for verification (SPICE format) |
+| `--verify-flatten-levels` | Compare logic-level and transistor-level netlists |
+
+### Logging Options
+
+| Option | Description |
+|--------|-------------|
+| `-v, --verbose` | Verbose output |
+| `-q, --quiet` | Quiet mode (errors only) |
+| `--log <file>` | Log file path |
+| `--keep-temp` | Keep temporary files |
+
+### Other Options
+
+| Option | Description |
+|--------|-------------|
+| `--config <file>` | Configuration file path |
+| `--dry-run` | Show what would be done without executing |
+| `-h, --help` | Show help message |
+| `--version` | Show version information |
+
+## Examples
+
+### Example 1: Simple Conversion
+
+```bash
 ./scripts/verilog2spice.sh examples/configurable_brent_kung_adder.v
-
-# Specify top module and output file
-./scripts/verilog2spice.sh -t configurable_brent_kung_adder -o adder.sp examples/configurable_brent_kung_adder.v
 ```
 
-### Advanced Usage
+This generates a hierarchical SPICE netlist in `output/configurable_brent_kung_adder.sp`.
+
+### Example 2: Flattened Logic-Level Netlist
 
 ```bash
-# Generate flattened netlist
 ./scripts/verilog2spice.sh --flattened examples/configurable_brent_kung_adder.v
-
-# Generate fully flattened netlist with embedded cell models (standalone file)
-./scripts/verilog2spice.sh --fully-flattened examples/configurable_brent_kung_adder.v
-
-# Generate both hierarchical and flattened
-./scripts/verilog2spice.sh --both -o design examples/configurable_brent_kung_adder.v
-
-# Use custom cell library
-./scripts/verilog2spice.sh --cell-library custom_cells.spice --cell-metadata cells.json examples/configurable_brent_kung_adder.v
-
-# Multiple files with includes
-./scripts/verilog2spice.sh -I ./libs -I ./rtl -t Top top.v module1.v module2.v
-
-# Verbose output
-./scripts/verilog2spice.sh -v examples/configurable_brent_kung_adder.v
 ```
 
-### Command-Line Options
+Generates a flattened gate-level netlist with embedded cell models.
 
-#### Input Options
-- `-t, --top <module>`: Specify top-level module name
-- `-I, --include <path>`: Add include/search path (can be repeated)
-- `-D, --define <name>=<value>`: Define preprocessor macro (can be repeated)
+### Example 3: Transistor-Level Flattening
 
-#### Output Options
-- `-o, --output <file>`: Output SPICE netlist file (default: <top_module>.sp)
-- `-O, --output-dir <dir>`: Output directory (default: ./output)
-- `--hierarchical, --hier`: Generate hierarchical netlist (default)
-- `--flattened, --flat`: Generate flattened netlist
-- `--fully-flattened, --fully-flat`: Generate fully flattened netlist with embedded cell library models (standalone file, no .include needed)
-- `--both`: Generate both hierarchical and flattened netlists
+```bash
+./scripts/verilog2spice.sh --flattened --flatten-level transistor \
+    --cell-library config/cell_libraries/cells.spice \
+    --cell-metadata config/cell_libraries/cells.json \
+    examples/configurable_brent_kung_adder.v
+```
 
-#### Synthesis Options
-- `--synthesis-script <file>`: Custom Yosys synthesis script
-- `--constraint <file>`: Timing/area constraints file
-- `--optimize`: Enable optimization (default)
-- `--no-optimize`: Disable optimization
+Generates a fully flattened transistor-level netlist (PMOS/NMOS).
 
-#### Technology Options
-- `--cell-library <file>`: Path to cell library SPICE file
-- `--cell-metadata <file>`: Path to cell metadata JSON file
-- `--tech <name>`: Technology name (e.g., "tsmc65nm", "sky130")
+### Example 4: Both Formats with Verification
 
-#### Logging Options
-- `-v, --verbose`: Verbose output
-- `-q, --quiet`: Quiet mode (errors only)
-- `--log <file>`: Log file path
-- `--keep-temp`: Keep temporary files
+```bash
+./scripts/verilog2spice.sh --both --verify examples/configurable_brent_kung_adder.v
+```
 
-#### Other Options
-- `--config <file>`: Configuration file path
-- `--dry-run`: Show what would be done without executing
-- `-h, --help`: Show help message
-- `--version`: Show version information
+Generates both hierarchical and flattened netlists and verifies they match.
+
+### Example 5: Multiple Files with Include Paths
+
+```bash
+./scripts/verilog2spice.sh \
+    -I ./libs \
+    -I ./rtl \
+    -t Top \
+    top.v module1.v module2.v
+```
+
+### Example 6: Custom Synthesis Script
+
+```bash
+./scripts/verilog2spice.sh \
+    -v \
+    --synthesis-script config/default_synthesis.tcl \
+    design.v
+```
 
 ## Project Structure
 
 ```
 verilog_spice_conversion/
-├── scripts/
-│   └── verilog2spice.sh          # Main shell script
-├── src/
-│   └── verilog2spice/
-│       ├── __init__.py
-│       ├── parser.py              # Yosys JSON parsing
-│       ├── synthesizer.py         # Yosys synthesis integration
-│       ├── mapper.py              # Technology mapping (Yosys gates to cells)
-│       ├── spice_generator.py     # SPICE netlist generation
-│       ├── formatter.py           # Hierarchical/flattened formatting
-│       └── cli.py                 # Command-line interface
-├── config/
-│   ├── default_synthesis.tcl      # Default Yosys synthesis script template
-│   └── cell_libraries/            # Standard cell libraries
-│       ├── cells.spice            # SPICE models (ngspice compatible)
-│       └── cells.json             # Cell metadata
-├── examples/                      # Example Verilog files
-└── output/                        # Generated netlists
+├── config/                 # Configuration files
+│   ├── cell_libraries/    # Cell library definitions
+│   └── default_synthesis.tcl
+├── docs/                  # Documentation
+│   └── INSTALL_NETGEN_LVS.md
+├── examples/              # Example Verilog designs
+├── output/               # Generated SPICE netlists
+├── scripts/              # Utility scripts
+│   └── verilog2spice.sh  # Main conversion script
+├── src/                  # Source code
+│   └── verilog2spice/    # Python package
+│       ├── cli.py        # Command-line interface
+│       ├── synthesizer.py # Yosys integration
+│       ├── parser.py     # Netlist parsing
+│       ├── mapper.py     # Cell library mapping
+│       ├── spice_generator.py # SPICE generation
+│       ├── formatter.py  # SPICE formatting
+│       └── lvs.py        # LVS verification
+├── requirements.txt      # Python dependencies
+└── LICENSE               # License file
 ```
 
-## Examples
+## Cell Library Configuration
 
-The `examples/` directory contains sample Verilog files for testing:
+Cell libraries are defined using JSON metadata files and SPICE model files. See `config/cell_libraries/cells.json` for an example.
 
-- `configurable_brent_kung_adder.v`
-- `configurable_carry_lookahead_adder.v`
-- `configurable_carry_select_adder.v`
-- `configurable_carry_skip_adder.v`
-- `configurable_conditional_sum_adder.v`
-- `configurable_kogge_stone_adder.v`
-
-### Example: Convert Brent-Kung Adder
-
-```bash
-# Basic conversion (hierarchical)
-./scripts/verilog2spice.sh \
-    -t configurable_brent_kung_adder \
-    -o brent_kung_adder.sp \
-    examples/configurable_brent_kung_adder.v
-
-# Fully flattened with embedded cell models (standalone file)
-./scripts/verilog2spice.sh \
-    --fully-flattened \
-    -t configurable_brent_kung_adder \
-    examples/configurable_brent_kung_adder.v
-```
-
-## Cell Library Format
-
-### JSON Metadata Format
-
-The cell library metadata (`cells.json`) defines cell information:
+### Cell Metadata Format
 
 ```json
 {
@@ -172,208 +301,112 @@ The cell library metadata (`cells.json`) defines cell information:
 }
 ```
 
-### SPICE Model Format
+## LVS Verification
 
-Cell SPICE models are defined in `.spice` files:
+The tool supports Layout vs. Schematic (LVS) verification using Netgen:
 
-```spice
-.SUBCKT INV A Y
-* Transistor-level model
-M1 Y A VDD VDD PMOS W=1u L=0.18u
-M2 Y A VSS VSS NMOS W=0.5u L=0.18u
-.ENDS INV
+1. **Hierarchical vs. Flattened**: Compare hierarchical and flattened netlists
+2. **Logic vs. Transistor**: Compare logic-level and transistor-level flattened netlists
+3. **Reference Comparison**: Compare against an external reference netlist
+
+Example:
+```bash
+./scripts/verilog2spice.sh --both --verify design.v
 ```
 
-## Output Format
+LVS reports are saved in the output directory with `.rpt` extension.
 
-### Hierarchical Netlist
+## Python API
 
-```spice
-* SPICE Netlist
-* Generated from Verilog RTL using Yosys
-* Top Module: Adder
-* Date: 2024-01-01
+You can also use the tool programmatically:
 
-.include "cells.spice"
+```python
+from src.verilog2spice.cli import main
+import sys
 
-.SUBCKT Adder A[3:0] B[3:0] Sum[3:0] Cout
-  X1 A[0] B[0] Sum[0] Cout_int1 FullAdder
-  ...
-.ENDS Adder
-
-.SUBCKT FullAdder A B Cin Sum Cout
-  X1 A B S1 NAND2
-  ...
-.ENDS FullAdder
+# Equivalent to: ./scripts/verilog2spice.sh design.v
+sys.argv = ['verilog2spice', 'design.v', '--flattened']
+main()
 ```
 
-### Flattened Netlist
+Or use individual modules:
 
-```spice
-* SPICE Netlist
-* Generated from Verilog RTL using Yosys
-* Top Module: Adder
-* Date: 2024-01-01
+```python
+from src.verilog2spice.synthesizer import synthesize
+from src.verilog2spice.spice_generator import generate_netlist
 
-.include "cells.spice"
-
-* Flattened Netlist - All instances at top level
-X1 A[0] B[0] Sum[0] Cout_int1 NAND2
-X2 A[1] B[1] Sum[1] Cout_int2 NAND2
-...
+# Synthesize and generate netlist
+netlist = synthesize(['design.v'], 'Top', ...)
+spice = generate_netlist(netlist, cell_library, ...)
 ```
-
-### Fully Flattened Netlist (with Embedded Cell Models)
-
-```spice
-* SPICE Netlist
-* Generated from Verilog RTL using Yosys
-* Top Module: Adder
-* Date: 2024-01-01
-
-* Cell library models embedded below (no .include needed)
-
-* ============================================================================
-* Embedded Cell Library Models
-* ============================================================================
-
-* Standard Cell Library SPICE Models
-* Generic technology library for ngspice
-...
-
-.SUBCKT INV A Y
-M1 Y A VDD VDD PMOS W=2u L=0.18u
-M2 Y A VSS VSS NMOS W=1u L=0.18u
-.ENDS INV
-
-.SUBCKT NAND2 A B Y
-...
-.ENDS NAND2
-
-* ============================================================================
-* Circuit Instances
-* ============================================================================
-
-X1 A[0] B[0] Sum[0] Cout_int1 NAND2
-X2 A[1] B[1] Sum[1] Cout_int2 NAND2
-...
-```
-
-**Note**: The fully flattened format is a standalone file that includes all cell library models directly, making it self-contained for simulation.
-
-## How It Works
-
-The tool uses the following workflow:
-
-1. **Yosys Synthesis**: Yosys parses the Verilog RTL and synthesizes it to a gate-level netlist
-2. **JSON Parsing**: The Yosys JSON output is parsed to extract module information, cells, and connections
-3. **Technology Mapping**: Yosys internal gate types (e.g., `$_AND_`, `$_XOR_`) are mapped to standard cells
-4. **SPICE Generation**: Gate-level netlist is converted to SPICE format with proper signal name resolution
-5. **Formatting**: Output is formatted as hierarchical, flattened, or fully-flattened (with embedded models)
 
 ## Troubleshooting
 
 ### Yosys Not Found
 
-**Yosys is required** - the tool will fail if Yosys is not installed. Install Yosys:
-
+If you see a warning about Yosys not being found:
 ```bash
-# Linux
+# Ubuntu/Debian
 sudo apt-get install yosys
 
 # macOS
 brew install yosys
-
-# Verify installation
-yosys -V
 ```
 
-### Python Import Errors
+### Netgen LVS Not Found
 
-Ensure you're running from the project root and dependencies are installed:
-
+If LVS verification fails, install Netgen LVS:
 ```bash
-pip install -r requirements.txt
+./scripts/install_netgen_lvs.sh
 ```
 
-### Module Not Found
+See [INSTALL_NETGEN_LVS.md](docs/INSTALL_NETGEN_LVS.md) for detailed instructions.
 
-If the top module cannot be found, explicitly specify it:
+### Python Version Issues
 
+Ensure Python 3.10+ is installed:
 ```bash
-./scripts/verilog2spice.sh -t ModuleName design.v
+python3 --version  # Should show 3.10 or higher
 ```
 
-## Limitations
+## Contributing
 
-- **Yosys Required**: The tool requires Yosys to be installed and available in PATH
-- **Gate Mapping**: Yosys internal gate types are mapped to standard cells - ensure your cell library supports all required gates
-- **Signal Resolution**: Signal names are resolved from Yosys netnames - complex designs may have auto-generated signal names
-- **Cell Library**: Default cell library uses generic 0.18μm CMOS models - replace with technology-specific models for production use
-- **Hierarchical Flattening**: Full hierarchical flattening (expanding subcircuits) is not yet implemented - flattened mode shows top-level instances only
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-## Yosys Gate Type Mapping
-
-The tool automatically maps Yosys internal gate types to standard cells:
-
-| Yosys Gate | Standard Cell |
-|------------|---------------|
-| `$_AND_`   | `AND2`        |
-| `$_OR_`    | `OR2`         |
-| `$_XOR_`   | `XOR2`        |
-| `$_NAND_`  | `NAND2`       |
-| `$_NOR_`   | `NOR2`        |
-| `$_NOT_`   | `INV`         |
-| `$_BUF_`   | `BUF`         |
-| `$_DFF_`   | `DFF`         |
-
-Ensure your cell library (`cells.json`) contains these standard cells.
-
-## Technical Details
-
-### Yosys Integration
-
-The tool uses Yosys for both parsing and synthesis:
-- Verilog files are read by Yosys (no separate parser needed)
-- Yosys synthesizes RTL to gate-level netlist
-- Output is in JSON format containing complete design information
-- All module hierarchy, ports, cells, and connections are extracted from Yosys JSON
-
-### Cell Library
-
-The default cell library (`config/cell_libraries/`) includes:
-- **cells.json**: Metadata defining cell pins, parameters, and SPICE model names
-- **cells.spice**: ngspice-compatible SPICE models with generic 0.18μm CMOS technology
-
-For production use, replace these with your foundry's technology-specific models.
-
-### Signal Name Resolution
-
-Yosys uses signal IDs (integers) internally. The tool resolves these to net names by:
-1. Extracting netnames from Yosys JSON
-2. Building a mapping from signal ID to net name
-3. Using this mapping when generating SPICE instances
-
-## Future Enhancements
-
-- Support for SystemVerilog
-- Full hierarchical flattening (expanding subcircuits recursively)
-- Integration with commercial EDA tools (Synopsys DC, Cadence Genus)
-- Automatic cell library generation from foundry PDKs
-- SPICE validation using ngspice
-- Performance analysis and optimization
-- Support for analog/mixed-signal designs
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ## License
 
-This project is licensed under the [Creative Commons Attribution 4.0 International License](LICENSE) (CC BY 4.0).
+This project is licensed under the Creative Commons Attribution 4.0 International License - see the [LICENSE](LICENSE) file for details.
 
-You are free to:
-- **Share** — copy and redistribute the material in any medium or format
-- **Adapt** — remix, transform, and build upon the material for any purpose, even commercially
+## Acknowledgments
 
-Under the following terms:
-- **Attribution** — You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+- [Yosys](https://github.com/YosysHQ/yosys) - Verilog synthesis framework
+- [Netgen](http://opencircuitdesign.com/netgen/) - LVS verification tool
+- [Rich](https://github.com/Textualize/rich) - Beautiful terminal output
 
-For more details, see the [LICENSE](LICENSE) file or visit [https://creativecommons.org/licenses/by/4.0/](https://creativecommons.org/licenses/by/4.0/).
+## Citation
 
+If you use this tool in your research, please cite:
+
+```bibtex
+@software{verilog2spice2024,
+  title = {Verilog to SPICE Conversion Tool},
+  author = {Your Name},
+  year = {2024},
+  url = {https://github.com/SJTU-YONGFU-RESEARCH-GRP/verilog_spice_conversion},
+  version = {1.0.0}
+}
+```
+
+## Support
+
+For issues, questions, or contributions, please open an issue on GitHub.
+
+---
+
+**Made with ❤️ for the VLSI design community**

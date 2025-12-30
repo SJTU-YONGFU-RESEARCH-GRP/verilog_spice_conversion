@@ -30,15 +30,18 @@ CELL_LIBRARY=""
 CELL_METADATA=""
 TECH=""
 FLATTENED=false
-FULLY_FLATTENED=false
 HIERARCHICAL=true
 BOTH=false
+FLATTEN_LEVEL="logic"
 VERBOSE=false
 QUIET=false
 LOG_FILE=""
 KEEP_TEMP=false
 CONFIG_FILE=""
 DRY_RUN=false
+VERIFY=false
+VERIFY_REFERENCE=""
+VERIFY_FLATTEN_LEVELS=false
 
 # Function to print colored output
 print_status() {
@@ -71,8 +74,8 @@ Output Options:
   -O, --output-dir <dir>         Output directory (default: ./output)
   --hierarchical, --hier         Generate hierarchical netlist (default)
   --flattened, --flat            Generate flattened netlist
-  --fully-flattened, --fully-flat Generate fully flattened netlist with embedded cell models
   --both                         Generate both hierarchical and flattened netlists
+  --flatten-level <level>        Flattening level for --flattened: 'logic' (gate-level, default) or 'transistor' (PMOS/NMOS level)
 
 Synthesis Options:
   --synthesis-script <file>       Custom Yosys synthesis script
@@ -91,6 +94,11 @@ Logging Options:
   --log <file>                   Log file path
   --keep-temp                    Keep temporary files
 
+Verification Options:
+  --verify                       Run LVS verification using Netgen
+  --verify-reference <file>      Reference netlist file for verification (SPICE format)
+  --verify-flatten-levels        Compare logic-level and transistor-level netlists
+
 Other Options:
   --config <file>                Configuration file path
   --dry-run                      Show what would be done without executing
@@ -100,8 +108,11 @@ Other Options:
 Examples:
   $0 adder.v
   $0 -t Adder -o adder.sp adder.v
-  $0 --flattened --cell-library cells.spice design.v
-  $0 --fully-flattened design.v  # Fully flattened with embedded cell models
+  $0 --flattened design.v  # Logic-level flattened with embedded cell models
+  $0 --flattened --flatten-level transistor design.v  # Transistor-level (PMOS/NMOS) flattening
+  $0 --flattened --verify design.v  # Generate and verify netlist
+  $0 --flattened --verify-reference reference.sp design.v  # Compare against reference
+  $0 --both --flatten-level transistor --verify-flatten-levels design.v  # Compare logic vs transistor
   $0 -I ./libs -I ./rtl -t Top top.v module1.v module2.v
   $0 --both -o design design.v
   $0 -v --synthesis-script custom_synth.tcl design.v
@@ -115,14 +126,14 @@ check_python() {
         print_error "Python 3 is not installed or not in PATH"
         exit 1
     fi
-    
+
     local python_version
     python_version=$(python3 --version 2>&1 | awk '{print $2}')
     local major_version
     major_version=$(echo "$python_version" | cut -d. -f1)
     local minor_version
     minor_version=$(echo "$python_version" | cut -d. -f2)
-    
+
     if [[ $major_version -lt 3 ]] || [[ $major_version -eq 3 && $minor_version -lt 10 ]]; then
         print_error "Python 3.10 or higher is required. Found: $python_version"
         exit 1
@@ -132,16 +143,16 @@ check_python() {
 # Function to check if required tools are available
 check_tools() {
     local missing_tools=()
-    
+
     # Check for Yosys (optional but recommended)
     if ! command -v yosys &> /dev/null; then
         print_status $YELLOW "Warning: yosys not found. Synthesis may not work properly."
         print_status $YELLOW "Install with: apt-get install yosys (Linux) or brew install yosys (macOS)"
     fi
-    
+
     # Check for Python packages (basic check - let Python handle import errors)
     # No specific package checks needed as Python will report import errors
-    
+
     if [[ ${#missing_tools[@]} -gt 0 ]]; then
         print_error "Missing required tools: ${missing_tools[*]}"
         exit 1
@@ -151,19 +162,19 @@ check_tools() {
 # Function to validate input files
 validate_input_files() {
     local files=("$@")
-    
+
     if [[ ${#files[@]} -eq 0 ]]; then
         print_error "No Verilog files specified"
         show_usage
         exit 1
     fi
-    
+
     for file in "${files[@]}"; do
         if [[ ! -f "$file" ]]; then
             print_error "File not found: $file"
             exit 1
         fi
-        
+
         if [[ ! -r "$file" ]]; then
             print_error "File is not readable: $file"
             exit 1
@@ -182,98 +193,112 @@ setup_output_dir() {
 # Function to build Python command
 build_python_cmd() {
     local cmd="python3 -m src.verilog2spice.cli"
-    
+
     # Add input files
     for file in "$@"; do
         cmd="$cmd \"$file\""
     done
-    
+
     # Add options
     if [[ -n "$TOP_MODULE" ]]; then
         cmd="$cmd --top \"$TOP_MODULE\""
     fi
-    
+
     if [[ -n "$OUTPUT_FILE" ]]; then
         cmd="$cmd --output \"$OUTPUT_FILE\""
     fi
-    
+
     if [[ -n "$OUTPUT_DIR" ]]; then
         cmd="$cmd --output-dir \"$OUTPUT_DIR\""
     fi
-    
+
     for include_path in "${INCLUDE_PATHS[@]}"; do
         cmd="$cmd --include \"$include_path\""
     done
-    
+
     for define in "${DEFINES[@]}"; do
         cmd="$cmd --define \"$define\""
     done
-    
+
     if [[ -n "$SYNTHESIS_SCRIPT" ]]; then
         cmd="$cmd --synthesis-script \"$SYNTHESIS_SCRIPT\""
     fi
-    
+
     if [[ -n "$CONSTRAINT_FILE" ]]; then
         cmd="$cmd --constraint \"$CONSTRAINT_FILE\""
     fi
-    
+
     if [[ "$OPTIMIZE" == false ]]; then
         cmd="$cmd --no-optimize"
     fi
-    
+
     if [[ -n "$CELL_LIBRARY" ]]; then
         cmd="$cmd --cell-library \"$CELL_LIBRARY\""
     fi
-    
+
     if [[ -n "$CELL_METADATA" ]]; then
         cmd="$cmd --cell-metadata \"$CELL_METADATA\""
     fi
-    
+
     if [[ -n "$TECH" ]]; then
         cmd="$cmd --tech \"$TECH\""
     fi
-    
-    if [[ "$FULLY_FLATTENED" == true ]]; then
-        cmd="$cmd --fully-flattened"
-    elif [[ "$FLATTENED" == true ]]; then
+
+    if [[ "$FLATTENED" == true ]]; then
         cmd="$cmd --flattened"
     fi
-    
-    if [[ "$HIERARCHICAL" == true && "$BOTH" == false && "$FULLY_FLATTENED" == false ]]; then
+
+    if [[ "$HIERARCHICAL" == true && "$BOTH" == false ]]; then
         cmd="$cmd --hierarchical"
     fi
-    
+
     if [[ "$BOTH" == true ]]; then
         cmd="$cmd --both"
     fi
-    
+
+    if [[ -n "$FLATTEN_LEVEL" ]]; then
+        cmd="$cmd --flatten-level \"$FLATTEN_LEVEL\""
+    fi
+
     if [[ "$VERBOSE" == true ]]; then
         cmd="$cmd --verbose"
     fi
-    
+
     if [[ "$QUIET" == true ]]; then
         cmd="$cmd --quiet"
     fi
-    
+
     if [[ -n "$LOG_FILE" ]]; then
         cmd="$cmd --log \"$LOG_FILE\""
     fi
-    
+
     if [[ "$KEEP_TEMP" == true ]]; then
         cmd="$cmd --keep-temp"
     fi
-    
+
     if [[ -n "$CONFIG_FILE" ]]; then
         cmd="$cmd --config \"$CONFIG_FILE\""
     fi
-    
+
+    if [[ "$VERIFY" == true ]]; then
+        cmd="$cmd --verify"
+    fi
+
+    if [[ -n "$VERIFY_REFERENCE" ]]; then
+        cmd="$cmd --verify-reference \"$VERIFY_REFERENCE\""
+    fi
+
+    if [[ "$VERIFY_FLATTEN_LEVELS" == true ]]; then
+        cmd="$cmd --verify-flatten-levels"
+    fi
+
     echo "$cmd"
 }
 
 # Function to parse command line arguments
 parse_args() {
     local verilog_files=()
-    
+
     while [[ $# -gt 0 ]]; do
         case $1 in
             -t|--top)
@@ -384,22 +409,27 @@ parse_args() {
                 FLATTENED=true
                 HIERARCHICAL=false
                 BOTH=false
-                FULLY_FLATTENED=false
-                shift
-                ;;
-            --fully-flattened|--fully-flat)
-                FULLY_FLATTENED=true
-                FLATTENED=true
-                HIERARCHICAL=false
-                BOTH=false
                 shift
                 ;;
             --both)
                 BOTH=true
                 HIERARCHICAL=false
                 FLATTENED=false
-                FULLY_FLATTENED=false
                 shift
+                ;;
+            --flatten-level)
+                if [[ -z "${2:-}" ]] || [[ "${2:-}" =~ ^- ]]; then
+                    print_error "--flatten-level requires a level (logic or transistor)"
+                    show_usage
+                    exit 1
+                fi
+                if [[ "$2" != "logic" && "$2" != "transistor" ]]; then
+                    print_error "--flatten-level must be 'logic' or 'transistor'"
+                    show_usage
+                    exit 1
+                fi
+                FLATTEN_LEVEL=$2
+                shift 2
                 ;;
             -v|--verbose)
                 VERBOSE=true
@@ -433,6 +463,25 @@ parse_args() {
                 CONFIG_FILE=$2
                 shift 2
                 ;;
+            --verify)
+                VERIFY=true
+                shift
+                ;;
+            --verify-reference)
+                if [[ -z "${2:-}" ]] || [[ "${2:-}" =~ ^- ]]; then
+                    print_error "--verify-reference requires a file path"
+                    show_usage
+                    exit 1
+                fi
+                VERIFY_REFERENCE=$2
+                VERIFY=true
+                shift 2
+                ;;
+            --verify-flatten-levels)
+                VERIFY_FLATTEN_LEVELS=true
+                VERIFY=true
+                shift
+                ;;
             --dry-run)
                 DRY_RUN=true
                 shift
@@ -456,7 +505,7 @@ parse_args() {
                 ;;
         esac
     done
-    
+
     # Return verilog files as array (using global variable)
     VERILOG_FILES=("${verilog_files[@]}")
 }
@@ -464,39 +513,39 @@ parse_args() {
 # Main function
 main() {
     print_status $BLUE "Starting Verilog to SPICE conversion..."
-    
+
     # Parse arguments
     parse_args "$@"
-    
+
     # Validate environment
     check_python
     check_tools
-    
+
     # Validate input files
     if [[ ${#VERILOG_FILES[@]} -eq 0 ]]; then
         print_error "No Verilog files specified"
         show_usage
         exit 1
     fi
-    
+
     validate_input_files "${VERILOG_FILES[@]}"
-    
+
     # Setup output directory
     setup_output_dir
-    
+
     # Change to project root for Python imports
     cd "$PROJECT_ROOT"
-    
+
     # Build Python command
     local python_cmd
     python_cmd=$(build_python_cmd "${VERILOG_FILES[@]}")
-    
+
     if [[ "$DRY_RUN" == true ]]; then
         print_status $YELLOW "Dry run mode - would execute:"
         echo "$python_cmd"
         exit 0
     fi
-    
+
     # Execute Python tool
     print_status $BLUE "Executing Python conversion tool..."
     if eval "$python_cmd"; then
@@ -509,4 +558,3 @@ main() {
 
 # Run main function with all arguments
 main "$@"
-
