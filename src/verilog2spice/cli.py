@@ -425,6 +425,8 @@ def main() -> int:
                     hier_file = output_dir / f"{top_module}.sp"
                 else:
                     hier_file = output_dir / (output_file or f"{top_module}.sp")
+                # Ensure parent directory exists
+                hier_file.parent.mkdir(parents=True, exist_ok=True)
                 hier_file.write_text(hier_text, encoding="utf-8")
                 console.print(f"[green]Generated hierarchical netlist: {hier_file}")
 
@@ -447,6 +449,8 @@ def main() -> int:
                     console.print(
                         f"[green]Generated flattened netlist (logic-level): {flat_file}"
                     )
+                # Ensure parent directory exists
+                flat_file.parent.mkdir(parents=True, exist_ok=True)
                 flat_file.write_text(flat_text, encoding="utf-8")
 
             progress.update(task6, completed=True)

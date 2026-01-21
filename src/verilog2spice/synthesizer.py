@@ -198,6 +198,7 @@ techmap; opt
     script_content = f"""# Yosys synthesis script
 {read_cmd}
 hierarchy -check -top {top_module}
+flatten
 {opt_cmds}
 write_json "{netlist_path}"
 """

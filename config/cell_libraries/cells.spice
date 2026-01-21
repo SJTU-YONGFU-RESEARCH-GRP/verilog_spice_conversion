@@ -1,0 +1,92 @@
+* Generic Standard Cell Library
+* This file contains SPICE subcircuit definitions for standard cells
+* These are generic CMOS implementations intended for logical correctness,
+* not for accurate timing or sizing. Replace with your PDK-specific cells
+* for real sign-off.
+
+* Inverter: Y = ~A
+.SUBCKT INV A Y
+M1 Y A VDD VDD PMOS W=2u L=0.18u
+M2 Y A VSS VSS NMOS W=1u L=0.18u
+.ENDS INV
+
+* Buffer: Y = A (implemented as two inverters)
+.SUBCKT BUF A Y
+XINV1 A n1 INV
+XINV2 n1 Y INV
+.ENDS BUF
+
+* 2-input NAND gate: Y = ~(A & B)
+.SUBCKT NAND2 A B Y
+M1 Y A VDD VDD PMOS W=2u L=0.18u
+M2 Y B VDD VDD PMOS W=2u L=0.18u
+M3 Y A net1 VSS NMOS W=1u L=0.18u
+M4 net1 B VSS VSS NMOS W=1u L=0.18u
+.ENDS NAND2
+
+* 2-input AND gate: Y = A & B = INV(NAND2(A,B))
+.SUBCKT AND2 A B Y
+XN1 A B n1 NAND2
+XI1 n1 Y INV
+.ENDS AND2
+
+* 2-input NOR gate: Y = ~(A | B)
+.SUBCKT NOR2 A B Y
+M1 Y A net1 VDD PMOS W=2u L=0.18u
+M2 net1 B VDD VDD PMOS W=2u L=0.18u
+M3 Y A VSS VSS NMOS W=1u L=0.18u
+M4 Y B VSS VSS NMOS W=1u L=0.18u
+.ENDS NOR2
+
+* 2-input OR gate: Y = A | B = INV(NOR2(A,B))
+.SUBCKT OR2 A B Y
+XN1 A B n1 NOR2
+XI1 n1 Y INV
+.ENDS OR2
+
+* 2-input XOR gate using only NAND2:
+* Y = A ^ B implemented with 4 NAND stages
+.SUBCKT XOR2 A B Y
+XN1 A B n1 NAND2
+XN2 A n1 n2 NAND2
+XN3 B n1 n3 NAND2
+XN4 n2 n3 Y NAND2
+.ENDS XOR2
+
+* 2-input XNOR gate: Y = ~(A ^ B)
+.SUBCKT XNOR2 A B Y
+XX1 A B n1 XOR2
+XI1 n1 Y INV
+.ENDS XNOR2
+
+* 2-input Multiplexer:
+* Y = (~S & A) | (S & B)
+.SUBCKT MUX2 A B S Y
+XI_S S nS INV
+XA A nS n1 AND2
+XB B S n2 AND2
+XO n1 n2 Y OR2
+.ENDS MUX2
+
+* D Flip-Flop (behavioral placeholder built from inverters).
+* This is NOT a physically realistic FF, but keeps netlists structurally valid.
+.SUBCKT DFF D CLK Q QN
+* Simple storage using cross-coupled inverters; clock is ignored in this placeholder.
+XI1 D Q INV
+XI2 Q QN INV
+.ENDS DFF
+
+* D Flip-Flop with Reset (behavioral placeholder).
+.SUBCKT DFFR D CLK RST Q QN
+* When RST is high, force Q=0, QN=1 (approximate behavior using gates).
+XI_RST RST nRST INV
+* Data path
+XI1 D nQ INV
+* Reset gating: Q = ~(nQ | RST)
+XNOR1 nQ RST Q NOR2
+XI2 Q QN INV
+.ENDS DFFR
+
+* Transistor models (generic - replace with your technology models)
+.model NMOS NMOS (LEVEL=1 VTO=0.7)
+.model PMOS PMOS (LEVEL=1 VTO=-0.7)
