@@ -470,10 +470,20 @@ def expand_instance_to_transistors(
         mapped_nets = [get_net_name(net) for net in inst_nets]
 
         # Create new instance name
+        # For Yosys-generated flattened netlists, keep X_ prefix for MOSFETs
+        # to match the format that Yosys produces (X_ prefixes for all flattened instances)
+        base_instance_name = instance_name
+        inst_name_to_use = inst_name
+        
+        # If expanding X_ subcircuit to M transistor, use X_ prefix to match Yosys format
+        if inst_name[0].upper() == "M" and instance_name[0].upper() == "X":
+            # Replace M prefix with X prefix in the transistor instance name
+            inst_name_to_use = "X" + inst_name[1:] if len(inst_name) > 1 else inst_name
+        
         new_inst_name = (
-            f"{instance_prefix}{instance_name}_{inst_name}"
+            f"{instance_prefix}{base_instance_name}_{inst_name_to_use}"
             if instance_prefix
-            else f"{instance_name}_{inst_name}"
+            else f"{base_instance_name}_{inst_name_to_use}"
         )
         inst_counter += 1
 
@@ -486,10 +496,12 @@ def expand_instance_to_transistors(
         elif inst_name[0].upper() == "X":
             # Nested subcircuit - recursively expand
             nested_line = f"{new_inst_name} {' '.join(mapped_nets)} {inst_type}"
+            # Convert X_ prefix to clean prefix for nested expansion
+            clean_instance_name = base_instance_name if instance_name[0].upper() == "X" else instance_name
             nested_prefix = (
-                f"{instance_prefix}{instance_name}_"
+                f"{instance_prefix}{clean_instance_name}_"
                 if instance_prefix
-                else f"{instance_name}_"
+                else f"{clean_instance_name}_"
             )
             nested_expanded = expand_instance_to_transistors(
                 nested_line, subcircuit_defs, net_name_counter, nested_prefix
