@@ -20,11 +20,35 @@
       "parameters": ["W", "L"],
       "description": "2-input AND gate"
     },
+    "AND3": {
+      "spice_model": "AND3",
+      "pins": ["A", "B", "C", "Y"],
+      "parameters": ["W", "L"],
+      "description": "3-input AND gate"
+    },
+    "AND4": {
+      "spice_model": "AND4",
+      "pins": ["A", "B", "C", "D", "Y"],
+      "parameters": ["W", "L"],
+      "description": "4-input AND gate"
+    },
     "NAND2": {
       "spice_model": "NAND2",
       "pins": ["A", "B", "Y"],
       "parameters": ["W", "L"],
       "description": "2-input NAND gate"
+    },
+    "NAND3": {
+      "spice_model": "NAND3",
+      "pins": ["A", "B", "C", "Y"],
+      "parameters": ["W", "L"],
+      "description": "3-input NAND gate"
+    },
+    "NAND4": {
+      "spice_model": "NAND4",
+      "pins": ["A", "B", "C", "D", "Y"],
+      "parameters": ["W", "L"],
+      "description": "4-input NAND gate"
     },
     "OR2": {
       "spice_model": "OR2",
@@ -32,11 +56,35 @@
       "parameters": ["W", "L"],
       "description": "2-input OR gate"
     },
+    "OR3": {
+      "spice_model": "OR3",
+      "pins": ["A", "B", "C", "Y"],
+      "parameters": ["W", "L"],
+      "description": "3-input OR gate"
+    },
+    "OR4": {
+      "spice_model": "OR4",
+      "pins": ["A", "B", "C", "D", "Y"],
+      "parameters": ["W", "L"],
+      "description": "4-input OR gate"
+    },
     "NOR2": {
       "spice_model": "NOR2",
       "pins": ["A", "B", "Y"],
       "parameters": ["W", "L"],
       "description": "2-input NOR gate"
+    },
+    "NOR3": {
+      "spice_model": "NOR3",
+      "pins": ["A", "B", "C", "Y"],
+      "parameters": ["W", "L"],
+      "description": "3-input NOR gate"
+    },
+    "NOR4": {
+      "spice_model": "NOR4",
+      "pins": ["A", "B", "C", "D", "Y"],
+      "parameters": ["W", "L"],
+      "description": "4-input NOR gate"
     },
     "XOR2": {
       "spice_model": "XOR2",
@@ -50,11 +98,59 @@
       "parameters": ["W", "L"],
       "description": "2-input XNOR gate"
     },
+    "XOR3": {
+      "spice_model": "XOR3",
+      "pins": ["A", "B", "C", "Y"],
+      "parameters": ["W", "L"],
+      "description": "3-input XOR gate"
+    },
+    "XOR4": {
+      "spice_model": "XOR4",
+      "pins": ["A", "B", "C", "D", "Y"],
+      "parameters": ["W", "L"],
+      "description": "4-input XOR gate"
+    },
+    "XNOR3": {
+      "spice_model": "XNOR3",
+      "pins": ["A", "B", "C", "Y"],
+      "parameters": ["W", "L"],
+      "description": "3-input XNOR gate"
+    },
+    "XNOR4": {
+      "spice_model": "XNOR4",
+      "pins": ["A", "B", "C", "D", "Y"],
+      "parameters": ["W", "L"],
+      "description": "4-input XNOR gate"
+    },
     "MUX2": {
       "spice_model": "MUX2",
       "pins": ["A", "B", "S", "Y"],
       "parameters": ["W", "L"],
       "description": "2-input multiplexer"
+    },
+    "MUX4": {
+      "spice_model": "MUX4",
+      "pins": ["A", "B", "C", "D", "S0", "S1", "Y"],
+      "parameters": ["W", "L"],
+      "description": "4-input multiplexer"
+    },
+    "MUX8": {
+      "spice_model": "MUX8",
+      "pins": ["A", "B", "C", "D", "E", "F", "G", "H", "S0", "S1", "S2", "Y"],
+      "parameters": ["W", "L"],
+      "description": "8-input multiplexer"
+    },
+    "HA": {
+      "spice_model": "HA",
+      "pins": ["A", "B", "SUM", "CARRY"],
+      "parameters": ["W", "L"],
+      "description": "Half adder"
+    },
+    "FA": {
+      "spice_model": "FA",
+      "pins": ["A", "B", "CI", "SUM", "CARRY"],
+      "parameters": ["W", "L"],
+      "description": "Full adder"
     },
     "DFF": {
       "spice_model": "DFF",

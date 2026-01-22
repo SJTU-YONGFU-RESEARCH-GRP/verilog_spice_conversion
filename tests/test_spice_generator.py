@@ -176,6 +176,51 @@ class TestGenerateModuleInstances:
         # Instance name will have $ replaced with _
         assert any("_NOT_0" in inst or "$_NOT_0" in inst for inst in instances)
 
+    def test_generate_module_instances_collapses_and_chain_to_and3(
+        self, sample_cell_library_data: Dict[str, Any]
+    ) -> None:
+        """Test collapsing a 2-input AND chain into a single AND3.
+
+        This validates the peephole optimization that reduces gate count by
+        collapsing safe associative chains (single-fanout internal nets).
+        """
+        cell_library = CellLibrary(
+            technology="generic",
+            cells=sample_cell_library_data["cells"],
+        )
+
+        # AND chain:
+        #   n2 = A & B
+        #   Y  = n2 & C
+        module_data: Dict[str, Any] = {
+            "cells": {
+                "$_AND_0": {
+                    "type": "$_AND_",
+                    "port_directions": {"A": "input", "B": "input", "Y": "output"},
+                    "connections": {"A": [0], "B": [1], "Y": [3]},
+                },
+                "$_AND_1": {
+                    "type": "$_AND_",
+                    "port_directions": {"A": "input", "B": "input", "Y": "output"},
+                    "connections": {"A": [3], "B": [2], "Y": [4]},
+                },
+            },
+            "netnames": {
+                "A": {"bits": [0]},
+                "B": {"bits": [1]},
+                "C": {"bits": [2]},
+                "n2": {"bits": [3]},
+                "Y": {"bits": [4]},
+            },
+            "ports": {"Y": {"direction": "output", "bits": [4]}},
+        }
+
+        instances = generate_module_instances(module_data, cell_library, "test_module")
+
+        # Should produce a single AND3 instance (and remove the intermediate AND cell).
+        assert any(inst.endswith(" AND3") for inst in instances), instances
+        assert not any(inst.endswith(" AND2") for inst in instances), instances
+
     def test_generate_module_instances_unmapped_gate(
         self, sample_cell_library_data: Dict[str, Any]
     ) -> None:
@@ -1226,3 +1271,119 @@ class TestExpandToTransistorLevel:
 
         # Should use fallback naming n{signal_id}
         assert len(instances) >= 0  # May generate with fallback names
+
+    def test_detect_half_adder_pattern(self) -> None:
+        """Test detecting half adder pattern from gate-level logic.
+
+        Tests that XOR(A, B) + AND(A, B) pattern is detected and replaced with HA cell.
+        """
+        from src.verilog2spice.spice_generator import _detect_adder_patterns
+        from src.verilog2spice.mapper import CellLibrary
+
+        # Create module data with HA pattern: XOR(A, B) -> SUM, AND(A, B) -> CARRY
+        module_data = {
+            "cells": {
+                "xor1": {
+                    "type": "$_XOR_",
+                    "connections": {"A": [1], "B": [2], "Y": [10]},  # SUM
+                },
+                "and1": {
+                    "type": "$_AND_",
+                    "connections": {"A": [1], "B": [2], "Y": [11]},  # CARRY
+                },
+            },
+            "netnames": {},
+            "ports": {},
+        }
+
+        cell_library = CellLibrary(
+            technology="generic",
+            cells={
+                "HA": {
+                    "pins": ["A", "B", "SUM", "CARRY"],
+                    "spice_model": "HA",
+                }
+            },
+        )
+
+        result = _detect_adder_patterns(module_data, module_data["cells"], cell_library)
+
+        # Should have replaced XOR+AND with HA
+        assert "xor1" not in result
+        assert "and1" not in result
+        # Should have HA cell
+        ha_cells = [name for name in result if name.startswith("HA_")]
+        assert len(ha_cells) == 1
+        ha_cell = result[ha_cells[0]]
+        assert ha_cell["type"] == "HA"
+        assert ha_cell["connections"]["A"] == [1]
+        assert ha_cell["connections"]["B"] == [2]
+        assert ha_cell["connections"]["SUM"] == [10]
+        assert ha_cell["connections"]["CARRY"] == [11]
+
+    def test_detect_full_adder_pattern(self) -> None:
+        """Test detecting full adder pattern from gate-level logic.
+
+        Tests that FA pattern (XOR chain + AND/OR) is detected and replaced with FA cell.
+        """
+        from src.verilog2spice.spice_generator import _detect_adder_patterns
+        from src.verilog2spice.mapper import CellLibrary
+
+        # Create module data with FA pattern:
+        # XOR(A, B) -> temp1, XOR(temp1, CI) -> SUM
+        # AND(A, B) -> temp2, AND(CI, temp1) -> temp3, OR(temp2, temp3) -> CARRY
+        module_data = {
+            "cells": {
+                "xor1": {
+                    "type": "$_XOR_",
+                    "connections": {"A": [1], "B": [2], "Y": [10]},  # A XOR B -> temp1
+                },
+                "xor2": {
+                    "type": "$_XOR_",
+                    "connections": {"A": [10], "B": [3], "Y": [20]},  # temp1 XOR CI -> SUM
+                },
+                "and1": {
+                    "type": "$_AND_",
+                    "connections": {"A": [1], "B": [2], "Y": [11]},  # A AND B -> temp2
+                },
+                "and2": {
+                    "type": "$_AND_",
+                    "connections": {"A": [3], "B": [10], "Y": [12]},  # CI AND temp1 -> temp3
+                },
+                "or1": {
+                    "type": "$_OR_",
+                    "connections": {"A": [11], "B": [12], "Y": [21]},  # temp2 OR temp3 -> CARRY
+                },
+            },
+            "netnames": {},
+            "ports": {},
+        }
+
+        cell_library = CellLibrary(
+            technology="generic",
+            cells={
+                "FA": {
+                    "pins": ["A", "B", "CI", "SUM", "CARRY"],
+                    "spice_model": "FA",
+                }
+            },
+        )
+
+        result = _detect_adder_patterns(module_data, module_data["cells"], cell_library)
+
+        # Should have replaced all 5 gates with FA
+        assert "xor1" not in result
+        assert "xor2" not in result
+        assert "and1" not in result
+        assert "and2" not in result
+        assert "or1" not in result
+        # Should have FA cell
+        fa_cells = [name for name in result if name.startswith("FA_")]
+        assert len(fa_cells) == 1
+        fa_cell = result[fa_cells[0]]
+        assert fa_cell["type"] == "FA"
+        assert fa_cell["connections"]["A"] == [1]
+        assert fa_cell["connections"]["B"] == [2]
+        assert fa_cell["connections"]["CI"] == [3]
+        assert fa_cell["connections"]["SUM"] == [20]
+        assert fa_cell["connections"]["CARRY"] == [21]

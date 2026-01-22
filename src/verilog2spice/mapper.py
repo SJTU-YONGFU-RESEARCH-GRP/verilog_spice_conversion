@@ -106,6 +106,11 @@ DEFAULT_GATE_MAP: Dict[str, str] = {
     "BUF": "BUF",
     "DFF": "DFF",
     "DFFR": "DFFR",
+    "FA": "FA",
+    "HA": "HA",
+    "MUX2": "MUX2",
+    "MUX4": "MUX4",
+    "MUX8": "MUX8",
 }
 
 

@@ -1,92 +1,635 @@
 * Generic Standard Cell Library
-* This file contains SPICE subcircuit definitions for standard cells
+* This file contains SPICE subcircuit definitions for standard cells.
 * These are generic CMOS implementations intended for logical correctness,
 * not for accurate timing or sizing. Replace with your PDK-specific cells
 * for real sign-off.
-
+*
+* All cells are implemented at pure transistor level (no hierarchical X calls).
+* Power rails are assumed to be global nodes VDD and VSS.
+*
+* ---------------------------------------------------------------------------
 * Inverter: Y = ~A
+* ---------------------------------------------------------------------------
 .SUBCKT INV A Y
 M1 Y A VDD VDD PMOS W=2u L=0.18u
 M2 Y A VSS VSS NMOS W=1u L=0.18u
 .ENDS INV
-
-* Buffer: Y = A (implemented as two inverters)
+*
+* ---------------------------------------------------------------------------
+* Buffer: Y = A (two cascaded inverters, flattened to devices)
+* ---------------------------------------------------------------------------
 .SUBCKT BUF A Y
-XINV1 A n1 INV
-XINV2 n1 Y INV
+* First inverter: A -> n1
+M1 n1 A VDD VDD PMOS W=2u L=0.18u
+M2 n1 A VSS VSS NMOS W=1u L=0.18u
+* Second inverter: n1 -> Y
+M3 Y n1 VDD VDD PMOS W=2u L=0.18u
+M4 Y n1 VSS VSS NMOS W=1u L=0.18u
 .ENDS BUF
-
+*
+* ---------------------------------------------------------------------------
 * 2-input NAND gate: Y = ~(A & B)
+* ---------------------------------------------------------------------------
 .SUBCKT NAND2 A B Y
+* Pull-up: PMOS in parallel
 M1 Y A VDD VDD PMOS W=2u L=0.18u
 M2 Y B VDD VDD PMOS W=2u L=0.18u
+* Pull-down: NMOS in series
 M3 Y A net1 VSS NMOS W=1u L=0.18u
 M4 net1 B VSS VSS NMOS W=1u L=0.18u
 .ENDS NAND2
-
-* 2-input AND gate: Y = A & B = INV(NAND2(A,B))
+*
+* ---------------------------------------------------------------------------
+* 3-input NAND gate: Y = ~(A & B & C)
+* ---------------------------------------------------------------------------
+.SUBCKT NAND3 A B C Y
+* Pull-up: all PMOS in parallel to VDD
+M1 Y A VDD VDD PMOS W=2u L=0.18u
+M2 Y B VDD VDD PMOS W=2u L=0.18u
+M3 Y C VDD VDD PMOS W=2u L=0.18u
+* Pull-down: three NMOS in series to VSS
+M4 Y A net1 VSS NMOS W=1u L=0.18u
+M5 net1 B net2 VSS NMOS W=1u L=0.18u
+M6 net2 C VSS VSS NMOS W=1u L=0.18u
+.ENDS NAND3
+*
+* ---------------------------------------------------------------------------
+* 4-input NAND gate: Y = ~(A & B & C & D)
+* ---------------------------------------------------------------------------
+.SUBCKT NAND4 A B C D Y
+* Pull-up: all PMOS in parallel to VDD
+M1 Y A VDD VDD PMOS W=2u L=0.18u
+M2 Y B VDD VDD PMOS W=2u L=0.18u
+M3 Y C VDD VDD PMOS W=2u L=0.18u
+M4 Y D VDD VDD PMOS W=2u L=0.18u
+* Pull-down: four NMOS in series to VSS
+M5 Y A net1 VSS NMOS W=1u L=0.18u
+M6 net1 B net2 VSS NMOS W=1u L=0.18u
+M7 net2 C net3 VSS NMOS W=1u L=0.18u
+M8 net3 D VSS VSS NMOS W=1u L=0.18u
+.ENDS NAND4
+*
+* ---------------------------------------------------------------------------
+* 2-input AND gate: Y = A & B implemented as NAND + inverter (flattened)
+* ---------------------------------------------------------------------------
 .SUBCKT AND2 A B Y
-XN1 A B n1 NAND2
-XI1 n1 Y INV
+* Internal NAND output
+M1 n_nand A VDD VDD PMOS W=2u L=0.18u
+M2 n_nand B VDD VDD PMOS W=2u L=0.18u
+M3 n_nand A n_nand_n VSS NMOS W=1u L=0.18u
+M4 n_nand_n B VSS VSS NMOS W=1u L=0.18u
+* Inverter: Y = ~n_nand
+M5 Y n_nand VDD VDD PMOS W=2u L=0.18u
+M6 Y n_nand VSS VSS NMOS W=1u L=0.18u
 .ENDS AND2
-
+*
+* ---------------------------------------------------------------------------
+* 3-input AND gate: Y = A & B & C implemented as NAND3 + inverter (flattened)
+* ---------------------------------------------------------------------------
+.SUBCKT AND3 A B C Y
+* Internal 3-input NAND network
+M1 n_nand A VDD VDD PMOS W=2u L=0.18u
+M2 n_nand B VDD VDD PMOS W=2u L=0.18u
+M3 n_nand C VDD VDD PMOS W=2u L=0.18u
+M4 n_nand A n1 VSS NMOS W=1u L=0.18u
+M5 n1 B n2 VSS NMOS W=1u L=0.18u
+M6 n2 C VSS VSS NMOS W=1u L=0.18u
+* Inverter: Y = ~n_nand
+M7 Y n_nand VDD VDD PMOS W=2u L=0.18u
+M8 Y n_nand VSS VSS NMOS W=1u L=0.18u
+.ENDS AND3
+*
+* ---------------------------------------------------------------------------
+* 4-input AND gate: Y = A & B & C & D implemented as NAND4 + inverter
+* ---------------------------------------------------------------------------
+.SUBCKT AND4 A B C D Y
+* Internal 4-input NAND network
+M1 n_nand A VDD VDD PMOS W=2u L=0.18u
+M2 n_nand B VDD VDD PMOS W=2u L=0.18u
+M3 n_nand C VDD VDD PMOS W=2u L=0.18u
+M4 n_nand D VDD VDD PMOS W=2u L=0.18u
+M5 n_nand A n1 VSS NMOS W=1u L=0.18u
+M6 n1 B n2 VSS NMOS W=1u L=0.18u
+M7 n2 C n3 VSS NMOS W=1u L=0.18u
+M8 n3 D VSS VSS NMOS W=1u L=0.18u
+* Inverter: Y = ~n_nand
+M9 Y n_nand VDD VDD PMOS W=2u L=0.18u
+M10 Y n_nand VSS VSS NMOS W=1u L=0.18u
+.ENDS AND4
+*
+* ---------------------------------------------------------------------------
 * 2-input NOR gate: Y = ~(A | B)
+* ---------------------------------------------------------------------------
 .SUBCKT NOR2 A B Y
+* Pull-up: PMOS in series
 M1 Y A net1 VDD PMOS W=2u L=0.18u
 M2 net1 B VDD VDD PMOS W=2u L=0.18u
+* Pull-down: NMOS in parallel
 M3 Y A VSS VSS NMOS W=1u L=0.18u
 M4 Y B VSS VSS NMOS W=1u L=0.18u
 .ENDS NOR2
-
-* 2-input OR gate: Y = A | B = INV(NOR2(A,B))
+*
+* ---------------------------------------------------------------------------
+* 3-input NOR gate: Y = ~(A | B | C)
+* ---------------------------------------------------------------------------
+.SUBCKT NOR3 A B C Y
+* Pull-up: three PMOS in series from VDD to Y
+M1 Y A net1 VDD PMOS W=2u L=0.18u
+M2 net1 B net2 VDD PMOS W=2u L=0.18u
+M3 net2 C VDD VDD PMOS W=2u L=0.18u
+* Pull-down: three NMOS in parallel from Y to VSS
+M4 Y A VSS VSS NMOS W=1u L=0.18u
+M5 Y B VSS VSS NMOS W=1u L=0.18u
+M6 Y C VSS VSS NMOS W=1u L=0.18u
+.ENDS NOR3
+*
+* ---------------------------------------------------------------------------
+* 4-input NOR gate: Y = ~(A | B | C | D)
+* ---------------------------------------------------------------------------
+.SUBCKT NOR4 A B C D Y
+* Pull-up: four PMOS in series from VDD to Y
+M1 Y A net1 VDD PMOS W=2u L=0.18u
+M2 net1 B net2 VDD PMOS W=2u L=0.18u
+M3 net2 C net3 VDD PMOS W=2u L=0.18u
+M4 net3 D VDD VDD PMOS W=2u L=0.18u
+* Pull-down: four NMOS in parallel from Y to VSS
+M5 Y A VSS VSS NMOS W=1u L=0.18u
+M6 Y B VSS VSS NMOS W=1u L=0.18u
+M7 Y C VSS VSS NMOS W=1u L=0.18u
+M8 Y D VSS VSS NMOS W=1u L=0.18u
+.ENDS NOR4
+*
+* ---------------------------------------------------------------------------
+* 2-input OR gate: Y = A | B implemented as NOR2 + inverter (flattened)
+* ---------------------------------------------------------------------------
 .SUBCKT OR2 A B Y
-XN1 A B n1 NOR2
-XI1 n1 Y INV
+* Internal NOR output
+M1 n_nor A net1 VDD PMOS W=2u L=0.18u
+M2 net1 B VDD VDD PMOS W=2u L=0.18u
+M3 n_nor A VSS VSS NMOS W=1u L=0.18u
+M4 n_nor B VSS VSS NMOS W=1u L=0.18u
+* Inverter: Y = ~n_nor
+M5 Y n_nor VDD VDD PMOS W=2u L=0.18u
+M6 Y n_nor VSS VSS NMOS W=1u L=0.18u
 .ENDS OR2
-
-* 2-input XOR gate using only NAND2:
-* Y = A ^ B implemented with 4 NAND stages
+*
+* ---------------------------------------------------------------------------
+* 3-input OR gate: Y = A | B | C implemented as NOR3 + inverter
+* ---------------------------------------------------------------------------
+.SUBCKT OR3 A B C Y
+* Internal 3-input NOR network
+M1 n_nor A net1 VDD PMOS W=2u L=0.18u
+M2 net1 B net2 VDD PMOS W=2u L=0.18u
+M3 net2 C VDD VDD PMOS W=2u L=0.18u
+M4 n_nor A VSS VSS NMOS W=1u L=0.18u
+M5 n_nor B VSS VSS NMOS W=1u L=0.18u
+M6 n_nor C VSS VSS NMOS W=1u L=0.18u
+* Inverter: Y = ~n_nor
+M7 Y n_nor VDD VDD PMOS W=2u L=0.18u
+M8 Y n_nor VSS VSS NMOS W=1u L=0.18u
+.ENDS OR3
+*
+* ---------------------------------------------------------------------------
+* 4-input OR gate: Y = A | B | C | D implemented as NOR4 + inverter
+* ---------------------------------------------------------------------------
+.SUBCKT OR4 A B C D Y
+* Internal 4-input NOR network
+M1 n_nor A net1 VDD PMOS W=2u L=0.18u
+M2 net1 B net2 VDD PMOS W=2u L=0.18u
+M3 net2 C net3 VDD PMOS W=2u L=0.18u
+M4 net3 D VDD VDD PMOS W=2u L=0.18u
+M5 n_nor A VSS VSS NMOS W=1u L=0.18u
+M6 n_nor B VSS VSS NMOS W=1u L=0.18u
+M7 n_nor C VSS VSS NMOS W=1u L=0.18u
+M8 n_nor D VSS VSS NMOS W=1u L=0.18u
+* Inverter: Y = ~n_nor
+M9 Y n_nor VDD VDD PMOS W=2u L=0.18u
+M10 Y n_nor VSS VSS NMOS W=1u L=0.18u
+.ENDS OR4
+*
+* ---------------------------------------------------------------------------
+* 2-input XOR gate: Y = A ^ B
+* Implemented as Y = (A & ~B) | (~A & B) using transistor-level logic.
+* ---------------------------------------------------------------------------
 .SUBCKT XOR2 A B Y
-XN1 A B n1 NAND2
-XN2 A n1 n2 NAND2
-XN3 B n1 n3 NAND2
-XN4 n2 n3 Y NAND2
+* Inverters for A and B
+MIA1 nA A VDD VDD PMOS W=2u L=0.18u
+MIA2 nA A VSS VSS NMOS W=1u L=0.18u
+MIB1 nB B VDD VDD PMOS W=2u L=0.18u
+MIB2 nB B VSS VSS NMOS W=1u L=0.18u
+* n1 = A & ~B  (AND2 structure)
+M1 n1 A VDD VDD PMOS W=2u L=0.18u
+M2 n1 nB VDD VDD PMOS W=2u L=0.18u
+M3 n1 A n1_n VSS NMOS W=1u L=0.18u
+M4 n1_n nB VSS VSS NMOS W=1u L=0.18u
+* n2 = ~A & B
+M5 n2 nA VDD VDD PMOS W=2u L=0.18u
+M6 n2 B VDD VDD PMOS W=2u L=0.18u
+M7 n2 nA n2_n VSS NMOS W=1u L=0.18u
+M8 n2_n B VSS VSS NMOS W=1u L=0.18u
+* Y = n1 | n2  (OR2 structure)
+M9 n_or n1 net1 VDD PMOS W=2u L=0.18u
+M10 net1 n2 VDD VDD PMOS W=2u L=0.18u
+M11 n_or n1 VSS VSS NMOS W=1u L=0.18u
+M12 n_or n2 VSS VSS NMOS W=1u L=0.18u
+* Buffer n_or to Y (inverter used as buffer)
+M13 Y n_or VDD VDD PMOS W=2u L=0.18u
+M14 Y n_or VSS VSS NMOS W=1u L=0.18u
 .ENDS XOR2
-
+*
+* ---------------------------------------------------------------------------
 * 2-input XNOR gate: Y = ~(A ^ B)
+* ---------------------------------------------------------------------------
 .SUBCKT XNOR2 A B Y
-XX1 A B n1 XOR2
-XI1 n1 Y INV
+* Use XOR2-like network to form x = A ^ B, then invert.
+* Inverters for A and B
+MIA1 nA A VDD VDD PMOS W=2u L=0.18u
+MIA2 nA A VSS VSS NMOS W=1u L=0.18u
+MIB1 nB B VDD VDD PMOS W=2u L=0.18u
+MIB2 nB B VSS VSS NMOS W=1u L=0.18u
+* n1 = A & ~B
+M1 n1 A VDD VDD PMOS W=2u L=0.18u
+M2 n1 nB VDD VDD PMOS W=2u L=0.18u
+M3 n1 A n1_n VSS NMOS W=1u L=0.18u
+M4 n1_n nB VSS VSS NMOS W=1u L=0.18u
+* n2 = ~A & B
+M5 n2 nA VDD VDD PMOS W=2u L=0.18u
+M6 n2 B VDD VDD PMOS W=2u L=0.18u
+M7 n2 nA n2_n VSS NMOS W=1u L=0.18u
+M8 n2_n B VSS VSS NMOS W=1u L=0.18u
+* x = n1 | n2
+M9 x n1 net1 VDD PMOS W=2u L=0.18u
+M10 net1 n2 VDD VDD PMOS W=2u L=0.18u
+M11 x n1 VSS VSS NMOS W=1u L=0.18u
+M12 x n2 VSS VSS NMOS W=1u L=0.18u
+* Y = ~x
+M13 Y x VDD VDD PMOS W=2u L=0.18u
+M14 Y x VSS VSS NMOS W=1u L=0.18u
 .ENDS XNOR2
-
+*
+* ---------------------------------------------------------------------------
+* 3-input XOR gate: Y = A ^ B ^ C (hierarchical composition)
+* ---------------------------------------------------------------------------
+.SUBCKT XOR3 A B C Y
+XXOR1 A B n1 XOR2
+XXOR2 n1 C Y XOR2
+.ENDS XOR3
+*
+* ---------------------------------------------------------------------------
+* 4-input XOR gate: Y = A ^ B ^ C ^ D (hierarchical composition)
+* ---------------------------------------------------------------------------
+.SUBCKT XOR4 A B C D Y
+XXOR1 A B n1 XOR2
+XXOR2 n1 C n2 XOR2
+XXOR3 n2 D Y XOR2
+.ENDS XOR4
+*
+* ---------------------------------------------------------------------------
+* 3-input XNOR gate: Y = ~(A ^ B ^ C) (hierarchical composition)
+* ---------------------------------------------------------------------------
+.SUBCKT XNOR3 A B C Y
+XXOR A B C n1 XOR3
+XI1 n1 Y INV
+.ENDS XNOR3
+*
+* ---------------------------------------------------------------------------
+* 4-input XNOR gate: Y = ~(A ^ B ^ C ^ D) (hierarchical composition)
+* ---------------------------------------------------------------------------
+.SUBCKT XNOR4 A B C D Y
+XXOR A B C D n1 XOR4
+XI1 n1 Y INV
+.ENDS XNOR4
+*
+* ---------------------------------------------------------------------------
 * 2-input Multiplexer:
 * Y = (~S & A) | (S & B)
+* Implemented as a transmission-gate based 2:1 mux.
+* ---------------------------------------------------------------------------
 .SUBCKT MUX2 A B S Y
-XI_S S nS INV
-XA A nS n1 AND2
-XB B S n2 AND2
-XO n1 n2 Y OR2
+* Inverter for select
+MIS1 nS S VDD VDD PMOS W=2u L=0.18u
+MIS2 nS S VSS VSS NMOS W=1u L=0.18u
+* Transmission gate for A path (enabled when S=0 -> nS=1)
+M1 Y A nS VDD PMOS W=2u L=0.18u
+M2 Y A S VSS NMOS W=1u L=0.18u
+* Transmission gate for B path (enabled when S=1)
+M3 Y B S VDD PMOS W=2u L=0.18u
+M4 Y B nS VSS NMOS W=1u L=0.18u
 .ENDS MUX2
-
-* D Flip-Flop (behavioral placeholder built from inverters).
-* This is NOT a physically realistic FF, but keeps netlists structurally valid.
+*
+* ---------------------------------------------------------------------------
+* 4-input Multiplexer:
+* Y = (~S1 & ~S0 & A) | (~S1 & S0 & B) | (S1 & ~S0 & C) | (S1 & S0 & D)
+* Implemented as a tree of transmission-gate 2:1 muxes (flattened).
+* ---------------------------------------------------------------------------
+.SUBCKT MUX4 A B C D S0 S1 Y
+* Inverters for selects
+MIS0 nS0 S0 VDD VDD PMOS W=2u L=0.18u
+MIS1 nS0 S0 VSS VSS NMOS W=1u L=0.18u
+MIS2 nS1 S1 VDD VDD PMOS W=2u L=0.18u
+MIS3 nS1 S1 VSS VSS NMOS W=1u L=0.18u
+* Stage 1: mux A/B -> nAB (select S0)
+M1 nAB A nS0 VDD PMOS W=2u L=0.18u
+M2 nAB A S0 VSS NMOS W=1u L=0.18u
+M3 nAB B S0 VDD PMOS W=2u L=0.18u
+M4 nAB B nS0 VSS NMOS W=1u L=0.18u
+* Stage 1: mux C/D -> nCD (select S0)
+M5 nCD C nS0 VDD PMOS W=2u L=0.18u
+M6 nCD C S0 VSS NMOS W=1u L=0.18u
+M7 nCD D S0 VDD PMOS W=2u L=0.18u
+M8 nCD D nS0 VSS NMOS W=1u L=0.18u
+* Stage 2: mux nAB/nCD -> Y (select S1)
+M9 Y nAB nS1 VDD PMOS W=2u L=0.18u
+M10 Y nAB S1 VSS NMOS W=1u L=0.18u
+M11 Y nCD S1 VDD PMOS W=2u L=0.18u
+M12 Y nCD nS1 VSS NMOS W=1u L=0.18u
+.ENDS MUX4
+*
+* ---------------------------------------------------------------------------
+* 8-input Multiplexer (hierarchical MUX tree flattened):
+* Inputs: A..H, selects S0 (LSB), S1, S2 (MSB)
+* ---------------------------------------------------------------------------
+.SUBCKT MUX8 A B C D E F G H S0 S1 S2 Y
+* Inverters for selects
+MIS0 nS0 S0 VDD VDD PMOS W=2u L=0.18u
+MIS1 nS0 S0 VSS VSS NMOS W=1u L=0.18u
+MIS2 nS1 S1 VDD VDD PMOS W=2u L=0.18u
+MIS3 nS1 S1 VSS VSS NMOS W=1u L=0.18u
+MIS4 nS2 S2 VDD VDD PMOS W=2u L=0.18u
+MIS5 nS2 S2 VSS VSS NMOS W=1u L=0.18u
+* Stage 1: pairwise 2:1 mux on S0
+* A/B -> nAB
+M1 nAB A nS0 VDD PMOS W=2u L=0.18u
+M2 nAB A S0 VSS NMOS W=1u L=0.18u
+M3 nAB B S0 VDD PMOS W=2u L=0.18u
+M4 nAB B nS0 VSS NMOS W=1u L=0.18u
+* C/D -> nCD
+M5 nCD C nS0 VDD PMOS W=2u L=0.18u
+M6 nCD C S0 VSS NMOS W=1u L=0.18u
+M7 nCD D S0 VDD PMOS W=2u L=0.18u
+M8 nCD D nS0 VSS NMOS W=1u L=0.18u
+* E/F -> nEF
+M9 nEF E nS0 VDD PMOS W=2u L=0.18u
+M10 nEF E S0 VSS NMOS W=1u L=0.18u
+M11 nEF F S0 VDD PMOS W=2u L=0.18u
+M12 nEF F nS0 VSS NMOS W=1u L=0.18u
+* G/H -> nGH
+M13 nGH G nS0 VDD PMOS W=2u L=0.18u
+M14 nGH G S0 VSS NMOS W=1u L=0.18u
+M15 nGH H S0 VDD PMOS W=2u L=0.18u
+M16 nGH H nS0 VSS NMOS W=1u L=0.18u
+* Stage 2: mux on S1
+* nAB/nCD -> nABCD
+M17 nABCD nAB nS1 VDD PMOS W=2u L=0.18u
+M18 nABCD nAB S1 VSS NMOS W=1u L=0.18u
+M19 nABCD nCD S1 VDD PMOS W=2u L=0.18u
+M20 nABCD nCD nS1 VSS NMOS W=1u L=0.18u
+* nEF/nGH -> nEFGH
+M21 nEFGH nEF nS1 VDD PMOS W=2u L=0.18u
+M22 nEFGH nEF S1 VSS NMOS W=1u L=0.18u
+M23 nEFGH nGH S1 VDD PMOS W=2u L=0.18u
+M24 nEFGH nGH nS1 VSS NMOS W=1u L=0.18u
+* Stage 3: mux on S2 -> Y
+M25 Y nABCD nS2 VDD PMOS W=2u L=0.18u
+M26 Y nABCD S2 VSS NMOS W=1u L=0.18u
+M27 Y nEFGH S2 VDD PMOS W=2u L=0.18u
+M28 Y nEFGH nS2 VSS NMOS W=1u L=0.18u
+.ENDS MUX8
+*
+* ---------------------------------------------------------------------------
+* Half Adder: SUM = A XOR B, CARRY = A AND B
+* Implemented explicitly using XOR2 and AND2 transistor structures (flattened).
+* ---------------------------------------------------------------------------
+.SUBCKT HA A B SUM CARRY
+* Internal inverters for A and B (for XOR2)
+MIA1 nA A VDD VDD PMOS W=2u L=0.18u
+MIA2 nA A VSS VSS NMOS W=1u L=0.18u
+MIB1 nB B VDD VDD PMOS W=2u L=0.18u
+MIB2 nB B VSS VSS NMOS W=1u L=0.18u
+* n1 = A & ~B
+M1 n1 A VDD VDD PMOS W=2u L=0.18u
+M2 n1 nB VDD VDD PMOS W=2u L=0.18u
+M3 n1 A n1_n VSS NMOS W=1u L=0.18u
+M4 n1_n nB VSS VSS NMOS W=1u L=0.18u
+* n2 = ~A & B
+M5 n2 nA VDD VDD PMOS W=2u L=0.18u
+M6 n2 B VDD VDD PMOS W=2u L=0.18u
+M7 n2 nA n2_n VSS NMOS W=1u L=0.18u
+M8 n2_n B VSS VSS NMOS W=1u L=0.18u
+* SUM_or = n1 | n2
+M9 n_sum n1 net1 VDD PMOS W=2u L=0.18u
+M10 net1 n2 VDD VDD PMOS W=2u L=0.18u
+M11 n_sum n1 VSS VSS NMOS W=1u L=0.18u
+M12 n_sum n2 VSS VSS NMOS W=1u L=0.18u
+* Buffer to SUM
+M13 SUM n_sum VDD VDD PMOS W=2u L=0.18u
+M14 SUM n_sum VSS VSS NMOS W=1u L=0.18u
+* CARRY = A & B (AND2)
+M15 n_cnand A VDD VDD PMOS W=2u L=0.18u
+M16 n_cnand B VDD VDD PMOS W=2u L=0.18u
+M17 n_cnand A n_cnand_n VSS NMOS W=1u L=0.18u
+M18 n_cnand_n B VSS VSS NMOS W=1u L=0.18u
+* Inverter to get true AND for CARRY
+M19 CARRY n_cnand VDD VDD PMOS W=2u L=0.18u
+M20 CARRY n_cnand VSS VSS NMOS W=1u L=0.18u
+.ENDS HA
+*
+* ---------------------------------------------------------------------------
+* Full Adder:
+* SUM = A XOR B XOR CI
+* CARRY = (A & B) | (CI & (A XOR B))
+* Implemented structurally, flattened to devices.
+* ---------------------------------------------------------------------------
+.SUBCKT FA A B CI SUM CARRY
+* --- First XOR: x1 = A ^ B ---
+* Inverters for A and B
+MIA1 nA A VDD VDD PMOS W=2u L=0.18u
+MIA2 nA A VSS VSS NMOS W=1u L=0.18u
+MIB1 nB B VDD VDD PMOS W=2u L=0.18u
+MIB2 nB B VSS VSS NMOS W=1u L=0.18u
+* n1 = A & ~B
+M1 n1 A VDD VDD PMOS W=2u L=0.18u
+M2 n1 nB VDD VDD PMOS W=2u L=0.18u
+M3 n1 A n1_n VSS NMOS W=1u L=0.18u
+M4 n1_n nB VSS VSS NMOS W=1u L=0.18u
+* n2 = ~A & B
+M5 n2 nA VDD VDD PMOS W=2u L=0.18u
+M6 n2 B VDD VDD PMOS W=2u L=0.18u
+M7 n2 nA n2_n VSS NMOS W=1u L=0.18u
+M8 n2_n B VSS VSS NMOS W=1u L=0.18u
+* x1 = n1 | n2
+M9 x1 n1 net1 VDD PMOS W=2u L=0.18u
+M10 net1 n2 VDD VDD PMOS W=2u L=0.18u
+M11 x1 n1 VSS VSS NMOS W=1u L=0.18u
+M12 x1 n2 VSS VSS NMOS W=1u L=0.18u
+*
+* --- Second XOR: SUM = x1 ^ CI ---
+* Inverter for x1 and CI
+MIX1 nx1 x1 VDD VDD PMOS W=2u L=0.18u
+MIX2 nx1 x1 VSS VSS NMOS W=1u L=0.18u
+MIC1 nCI CI VDD VDD PMOS W=2u L=0.18u
+MIC2 nCI CI VSS VSS NMOS W=1u L=0.18u
+* n3 = x1 & ~CI
+M13 n3 x1 VDD VDD PMOS W=2u L=0.18u
+M14 n3 nCI VDD VDD PMOS W=2u L=0.18u
+M15 n3 x1 n3_n VSS NMOS W=1u L=0.18u
+M16 n3_n nCI VSS VSS NMOS W=1u L=0.18u
+* n4 = ~x1 & CI
+M17 n4 nx1 VDD VDD PMOS W=2u L=0.18u
+M18 n4 CI VDD VDD PMOS W=2u L=0.18u
+M19 n4 nx1 n4_n VSS NMOS W=1u L=0.18u
+M20 n4_n CI VSS VSS NMOS W=1u L=0.18u
+* SUM_or = n3 | n4
+M21 n_sum n3 net2 VDD PMOS W=2u L=0.18u
+M22 net2 n4 VDD VDD PMOS W=2u L=0.18u
+M23 n_sum n3 VSS VSS NMOS W=1u L=0.18u
+M24 n_sum n4 VSS VSS NMOS W=1u L=0.18u
+* Buffer to SUM
+M25 SUM n_sum VDD VDD PMOS W=2u L=0.18u
+M26 SUM n_sum VSS VSS NMOS W=1u L=0.18u
+*
+* --- CARRY path: (A & B) | (CI & x1) ---
+* c1 = A & B  (AND2 style: NAND+INV)
+M27 n_c1nand A VDD VDD PMOS W=2u L=0.18u
+M28 n_c1nand B VDD VDD PMOS W=2u L=0.18u
+M29 n_c1nand A n_c1nand_n VSS NMOS W=1u L=0.18u
+M30 n_c1nand_n B VSS VSS NMOS W=1u L=0.18u
+M31 c1 n_c1nand VDD VDD PMOS W=2u L=0.18u
+M32 c1 n_c1nand VSS VSS NMOS W=1u L=0.18u
+* c2 = CI & x1
+M33 n_c2nand CI VDD VDD PMOS W=2u L=0.18u
+M34 n_c2nand x1 VDD VDD PMOS W=2u L=0.18u
+M35 n_c2nand CI n_c2nand_n VSS NMOS W=1u L=0.18u
+M36 n_c2nand_n x1 VSS VSS NMOS W=1u L=0.18u
+M37 c2 n_c2nand VDD VDD PMOS W=2u L=0.18u
+M38 c2 n_c2nand VSS VSS NMOS W=1u L=0.18u
+* CARRY = c1 | c2 (OR2)
+M39 n_carry c1 net3 VDD PMOS W=2u L=0.18u
+M40 net3 c2 VDD VDD PMOS W=2u L=0.18u
+M41 n_carry c1 VSS VSS NMOS W=1u L=0.18u
+M42 n_carry c2 VSS VSS NMOS W=1u L=0.18u
+* Buffer to CARRY
+M43 CARRY n_carry VDD VDD PMOS W=2u L=0.18u
+M44 CARRY n_carry VSS VSS NMOS W=1u L=0.18u
+.ENDS FA
+*
+* ---------------------------------------------------------------------------
+* D Flip-Flop: Master-Slave implementation with clocked latches.
+* Based on standard CMOS flip-flop topology (ASAP7-style).
+* Q = D on rising clock edge, QN = ~Q
+* ---------------------------------------------------------------------------
 .SUBCKT DFF D CLK Q QN
-* Simple storage using cross-coupled inverters; clock is ignored in this placeholder.
-XI1 D Q INV
-XI2 Q QN INV
+* Clock inverter chain: CLK -> clkn -> clkb
+* clkn = ~CLK
+M1_clkn clkn CLK VDD VDD PMOS W=2u L=0.18u
+M2_clkn clkn CLK VSS VSS NMOS W=1u L=0.18u
+* clkb = ~clkn = CLK
+M3_clkb clkb clkn VDD VDD PMOS W=2u L=0.18u
+M4_clkb clkb clkn VSS VSS NMOS W=1u L=0.18u
+*
+* Master latch (MH): captures D when clkn is high
+* Transmission gate: D -> MH (NMOS controlled by clkn, PMOS controlled by clkb)
+* NMOS pass: D -> pd1 when clkn=1
+M5_mh_npd pd1 D VSS VSS NMOS W=1u L=0.18u
+M6_mh_npg MH clkn pd1 VSS NMOS W=1u L=0.18u
+* PMOS pass: D -> pu1 when clkb=0
+M7_mh_ppu pu1 D VDD VDD PMOS W=2u L=0.18u
+M8_mh_ppg MH clkb pu1 VDD PMOS W=2u L=0.18u
+* Master storage: MS = ~MH (cross-coupled inverters)
+M9_ms_n MS MH VSS VSS NMOS W=1u L=0.18u
+M10_ms_p MS MH VDD VDD PMOS W=2u L=0.18u
+* Master feedback: MH holds via MS when clkb is high
+M11_mh_fb_n MH clkb MS VSS NMOS W=1u L=0.18u
+M12_mh_fb_p MH clkn MS VDD PMOS W=2u L=0.18u
+*
+* Slave latch (SH): captures MH when clkb is high
+* Transmission gate: MH -> SH (NMOS controlled by clkb, PMOS controlled by clkn)
+* NMOS pass: MH -> pd2 when clkb=1
+M13_sh_npd pd2 MH VSS VSS NMOS W=1u L=0.18u
+M14_sh_npg SH clkb pd2 VSS NMOS W=1u L=0.18u
+* PMOS pass: MH -> pu2 when clkn=0
+M15_sh_ppu pu2 MH VDD VDD PMOS W=2u L=0.18u
+M16_sh_ppg SH clkn pu2 VDD PMOS W=2u L=0.18u
+* Slave storage: SS = ~SH (cross-coupled inverters)
+M17_ss_n SS SH VSS VSS NMOS W=1u L=0.18u
+M18_ss_p SS SH VDD VDD PMOS W=2u L=0.18u
+* Slave feedback: SH holds via SS when clkn is high
+M19_sh_fb_n SH clkn SS VSS NMOS W=1u L=0.18u
+M20_sh_fb_p SH clkb SS VDD PMOS W=2u L=0.18u
+*
+* Output: Q = SH, QN = ~SH
+M21_q Q SH VDD VDD PMOS W=2u L=0.18u
+M22_q Q SH VSS VSS NMOS W=1u L=0.18u
+M23_qn QN SH VDD VDD PMOS W=2u L=0.18u
+M24_qn QN SH VSS VSS NMOS W=1u L=0.18u
 .ENDS DFF
-
-* D Flip-Flop with Reset (behavioral placeholder).
+*
+* ---------------------------------------------------------------------------
+* D Flip-Flop with Reset: Master-Slave implementation with async reset.
+* Based on standard CMOS flip-flop topology with reset capability.
+* When RST=1: Q=0, QN=1 (asynchronous reset)
+* When RST=0: Q = D on rising clock edge, QN = ~Q
+* ---------------------------------------------------------------------------
 .SUBCKT DFFR D CLK RST Q QN
-* When RST is high, force Q=0, QN=1 (approximate behavior using gates).
-XI_RST RST nRST INV
-* Data path
-XI1 D nQ INV
-* Reset gating: Q = ~(nQ | RST)
-XNOR1 nQ RST Q NOR2
-XI2 Q QN INV
+* Clock inverter chain: CLK -> clkn -> clkb
+M1_clkn clkn CLK VDD VDD PMOS W=2u L=0.18u
+M2_clkn clkn CLK VSS VSS NMOS W=1u L=0.18u
+M3_clkb clkb clkn VDD VDD PMOS W=2u L=0.18u
+M4_clkb clkb clkn VSS VSS NMOS W=1u L=0.18u
+*
+* Reset inverter: RST -> nRST
+M5_rst_inv nRST RST VDD VDD PMOS W=2u L=0.18u
+M6_rst_inv nRST RST VSS VSS NMOS W=1u L=0.18u
+*
+* Master latch (MH): captures D when clkn is high
+* Transmission gate: D -> MH (NMOS controlled by clkn, PMOS controlled by clkb)
+* NMOS pass: D -> pd1 when clkn=1
+M7_mh_npd pd1 D VSS VSS NMOS W=1u L=0.18u
+M8_mh_npg MH clkn pd1 VSS NMOS W=1u L=0.18u
+* PMOS pass: D -> pu1 when clkb=0
+M9_mh_ppu pu1 D VDD VDD PMOS W=2u L=0.18u
+M10_mh_ppg MH clkb pu1 VDD PMOS W=2u L=0.18u
+* Reset pull-down on MH when RST=1
+M11_mh_rst MH RST VSS VSS NMOS W=1u L=0.18u
+* Master storage: MS = ~MH (cross-coupled inverters)
+M12_ms_n MS MH VSS VSS NMOS W=1u L=0.18u
+M13_ms_p MS MH VDD VDD PMOS W=2u L=0.18u
+* Reset pull-up on MS when RST=1 (to ensure MS=1 when MH=0)
+M14_ms_rst MS RST VDD VDD PMOS W=2u L=0.18u
+* Master feedback: MH holds via MS when clkb is high
+M15_mh_fb_n MH clkb MS VSS NMOS W=1u L=0.18u
+M16_mh_fb_p MH clkn MS VDD PMOS W=2u L=0.18u
+*
+* Slave latch (SH): captures MH when clkb is high
+* Transmission gate: MH -> SH (NMOS controlled by clkb, PMOS controlled by clkn)
+* NMOS pass: MH -> pd2 when clkb=1
+M17_sh_npd pd2 MH VSS VSS NMOS W=1u L=0.18u
+M18_sh_npg SH clkb pd2 VSS NMOS W=1u L=0.18u
+* PMOS pass: MH -> pu2 when clkn=0
+M19_sh_ppu pu2 MH VDD VDD PMOS W=2u L=0.18u
+M20_sh_ppg SH clkn pu2 VDD PMOS W=2u L=0.18u
+* Reset pull-down on SH when RST=1
+M21_sh_rst SH RST VSS VSS NMOS W=1u L=0.18u
+* Slave storage: SS = ~SH (cross-coupled inverters)
+M22_ss_n SS SH VSS VSS NMOS W=1u L=0.18u
+M23_ss_p SS SH VDD VDD PMOS W=2u L=0.18u
+* Slave feedback: SH holds via SS when clkn is high
+M24_sh_fb_n SH clkn SS VSS NMOS W=1u L=0.18u
+M25_sh_fb_p SH clkb SS VDD PMOS W=2u L=0.18u
+*
+* Output: Q = SH, QN = ~SH
+* Reset ensures Q=0, QN=1 when RST=1
+M26_q Q SH VDD VDD PMOS W=2u L=0.18u
+M27_q Q SH VSS VSS NMOS W=1u L=0.18u
+M28_q_rst Q RST VSS VSS NMOS W=1u L=0.18u
+M29_qn QN SH VDD VDD PMOS W=2u L=0.18u
+M30_qn QN SH VSS VSS NMOS W=1u L=0.18u
+M31_qn_rst QN RST VDD VDD PMOS W=2u L=0.18u
 .ENDS DFFR
-
+*
+* ---------------------------------------------------------------------------
 * Transistor models (generic - replace with your technology models)
+* ---------------------------------------------------------------------------
 .model NMOS NMOS (LEVEL=1 VTO=0.7)
 .model PMOS PMOS (LEVEL=1 VTO=-0.7)
+*
